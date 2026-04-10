@@ -1,0 +1,3031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WAA Kids Closet — We-Are-Affordable | Harihar, Karnataka</title>
+<meta name="description" content="WAA Kids Closet – Premium branded kidswear at affordable prices. Babyhug, Zara & more. Serving Harihar, Davangere & PAN India. COD available.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet">
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<!-- ══ CLOUD SYNC — JSONBin.io (Free, works instantly, no complex setup) ══ -->
+<!-- ══ FIREBASE SDKs ══ -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// FIREBASE CONFIG — Paste your Firebase project config here
+// How to get it (5 min, free):
+// 1. Go to console.firebase.google.com
+// 2. Create project → name: waa-kids-closet
+// 3. Project Settings (gear icon) → Your Apps → Web → Register App
+// 4. Copy the firebaseConfig object below
+// ══════════════════════════════════════════════════════════════
+// ── STEP 1: Paste your Firebase config here ──────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyAhnZTl-1Wzda2t4dX9EX5MXKvXaIUuikk",
+  authDomain: "waa-kids-closet-b5351.firebaseapp.com",
+  projectId: "waa-kids-closet-b5351",
+  storageBucket: "waa-kids-closet-b5351.firebasestorage.app",
+  messagingSenderId: "996993482315",
+  appId: "1:996993482315:web:b865e09734dbe7bc2bd7ce",
+  measurementId: "G-1BW013MN8M"
+};
+// ─────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+
+// Keep JSONBin as fallback (already configured)
+window._SYNC = {
+  binId:  '69d650b1aaba882197d7c3be',
+  apiKey: '$2a$10$Y.e.r9rQe750oDAMvf.tMud9st5n.whEK8089kpmoI/WusO665bMy',
+  ready:  true,
+  lastSync: 0
+};
+
+window._fbReady = false;
+window._fbDB    = null;
+window._fbST    = null;
+window._fbAU    = null;
+
+(function() {
+  // Check localStorage for dynamically saved config
+  // Note: const firebaseConfig cannot be reassigned — localStorage restore
+  // is handled via applyFirebaseConfig() which reloads the page with saved values
+  // embedded. For dynamic config, use the admin panel Setup card.
+  var isConfigured = (typeof firebaseConfig !== 'undefined') && firebaseConfig.apiKey !== 'PASTE_HERE' && firebaseConfig.apiKey.length > 10;
+
+  if (isConfigured) {
+    try {
+      firebase.initializeApp(firebaseConfig);
+      window._fbDB   = firebase.firestore();
+      window._fbST   = firebase.storage();
+      window._fbAU   = firebase.auth();
+      window._fbReady = true;
+      console.log('✅ Firebase connected!');
+
+      // ── REAL-TIME PRODUCTS LISTENER ──
+      // Fires on ALL devices the moment admin saves a product
+      window._fbDB.collection('products')
+        .orderBy('updatedAt', 'desc')
+        .onSnapshot(function(snap) {
+          if (snap.empty) return;
+          var prods = [];
+          snap.forEach(function(d) { prods.push(Object.assign({}, d.data(), {id: d.id})); });
+          localStorage.setItem('waa_v5_prods', JSON.stringify(prods));
+          console.log('🔄 Products synced: ' + prods.length);
+          var pg = (document.querySelector('.page.active')||{}).id || '';
+          if (pg === 'page-home')  renderHome();
+          if (pg === 'page-shop')  renderShop();
+          var ap = document.getElementById('as-products');
+          if (ap && ap.classList.contains('on')) renderAdmProd();
+          var ad = document.getElementById('as-dashboard');
+          if (ad && ad.classList.contains('on')) renderDashStats();
+        }, function(e) { console.warn('Products listener:', e); });
+
+      // ── REAL-TIME ORDERS LISTENER ──
+      window._fbDB.collection('orders')
+        .orderBy('dateISO', 'desc')
+        .onSnapshot(function(snap) {
+          var ords = [];
+          snap.forEach(function(d) { ords.push(Object.assign({}, d.data(), {id: d.id})); });
+          if (ords.length > 0) {
+            localStorage.setItem('waa_v5_orders', JSON.stringify(ords));
+          }
+          console.log('🔄 Orders synced: ' + ords.length);
+          // Always re-render — even empty means "no orders yet"
+          var ao = document.getElementById('as-orders');
+          if (ao && ao.classList.contains('on')) renderOrders();
+          var ad2 = document.getElementById('as-dashboard');
+          if (ad2 && ad2.classList.contains('on')) renderDashStats();
+        }, function(e) { console.warn('Orders listener:', e); });
+
+      // ── REAL-TIME CATEGORIES LISTENER ──
+      window._fbDB.collection('categories')
+        .onSnapshot(function(snap) {
+          if (snap.empty) return;
+          var cats = [];
+          snap.forEach(function(d) { cats.push(Object.assign({}, d.data(), {id: d.id})); });
+          localStorage.setItem('waa_v5_cats', JSON.stringify(cats));
+          var ac = document.getElementById('as-categories');
+          if (ac && ac.classList.contains('on')) renderCatT();
+        }, function(e) { console.warn('Categories listener:', e); });
+
+      // Hide setup reminder
+      document.addEventListener('DOMContentLoaded', function() {
+        var rem = document.getElementById('fb-setup-reminder');
+        if (rem) rem.style.display = 'none';
+      });
+
+    } catch(e) {
+      console.warn('Firebase init failed:', e);
+      window._fbReady = false;
+    }
+  } else {
+    console.log('ℹ️ Firebase not configured — using JSONBin fallback');
+    // JSONBin fallback still active via cloudPush/cloudPull
+    setTimeout(function() {
+      var rem = document.getElementById('fb-setup-reminder');
+      if (rem) rem.style.display = 'block';
+    }, 600);
+  }
+})();
+</script>
+
+<style>
+:root{
+  --pk:#ff4fa0;--pk2:#e8358c;--pk-l:#fff0f7;--pk-m:#ffe0f0;
+  --yl:#ffd336;--yl-l:#fffbea;--yl2:#f5c800;
+  --gn:#4ecb71;--gn-l:#edfff3;
+  --bl:#5bb8ff;--bl-l:#edf6ff;
+  --pp:#a78bfa;--pp-l:#f5f3ff;
+  --or:#ff8c42;--rd:#ff5252;
+  --bg:#fdf9ff;--tx:#2d2347;--mu:#9188a8;
+  --br:#f0e8fb;--cd:#fff;
+  --rr:16px;--rpill:50px;
+  --sh:0 4px 20px rgba(167,139,250,.13);
+  --shh:0 8px 32px rgba(167,139,250,.22);
+  --fn:'Nunito',sans-serif;--fd:'Fredoka One',sans-serif;
+  /* ADMIN */
+  --ab:#0d0820;--asb:#150b2d;--ac:#1b1238;--ab2:#221645;
+  --abr:rgba(255,255,255,.07);--at:#ede9ff;--am:#7c6fa0;
+  --aa:#c084fc;--aa2:#f472b6;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:130px}
+body{font-family:var(--fn);background:var(--bg);color:var(--tx);overflow-x:hidden}
+img{max-width:100%;display:block}
+.page{display:none;min-height:100vh;overflow:hidden}.page.active{display:block;overflow:visible}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:var(--br);border-radius:3px}
+
+/* ═══ NAVBAR ═══ */
+#siteNav{
+  position:fixed;top:0;left:0;right:0;z-index:900;
+  background:rgba(255,255,255,.97);backdrop-filter:blur(16px);
+  border-bottom:2.5px solid var(--br);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 2rem;height:70px;transition:box-shadow .2s;
+}
+#siteNav.scrolled{box-shadow:0 4px 24px rgba(167,139,250,.18)}
+.nav-logo{display:flex;align-items:center;gap:.6rem;cursor:pointer}
+.nav-logo-img{height:52px;width:auto;object-fit:contain;border-radius:10px}
+.nav-logo-txt{font-family:var(--fd);font-size:1.2rem;color:var(--tx);line-height:1.15}
+.nav-logo-txt span{color:var(--pk)}
+.nav-logo-sub{font-size:.62rem;color:var(--mu);font-weight:700;letter-spacing:.03em}
+.nav-links{display:flex;gap:.2rem;list-style:none}
+.nav-links a{text-decoration:none;color:var(--mu);font-weight:700;font-size:.87rem;padding:.45rem .85rem;border-radius:10px;transition:all .18s;cursor:pointer}
+.nav-links a:hover{background:var(--pk-l);color:var(--pk)}
+.nav-acts{display:flex;align-items:center;gap:.6rem}
+.cart-btn{background:none;border:none;cursor:pointer;padding:.5rem .7rem;border-radius:10px;color:var(--mu);transition:all .18s;position:relative;font-family:var(--fn);font-size:.95rem;display:flex;align-items:center;gap:.3rem;font-weight:700}
+.cart-btn:hover{background:var(--pk-l);color:var(--pk)}
+.cbadge{position:absolute;top:0px;right:0px;background:var(--pk);color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.adm-nav-btn{background:linear-gradient(135deg,var(--tx),#4a1d6e);color:#fff;border:none;padding:.45rem 1.1rem;border-radius:var(--rpill);font-family:var(--fn);font-size:.78rem;font-weight:800;cursor:pointer;transition:all .2s}
+.adm-nav-btn:hover{opacity:.85;transform:translateY(-1px)}
+.burger{display:none;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:.5rem}
+.burger span{display:block;width:22px;height:2px;background:var(--tx);border-radius:2px;transition:.2s}
+.mob-nav{position:fixed;top:70px;left:0;right:0;background:#fff;z-index:899;padding:1.5rem 2rem;display:none;flex-direction:column;gap:1rem;border-bottom:2px solid var(--br);box-shadow:var(--sh)}
+.mob-nav.open{display:flex}
+.mob-nav a{font-family:var(--fd);font-size:1.4rem;text-decoration:none;color:var(--tx);cursor:pointer;padding:.5rem 0;border-bottom:1px solid var(--br)}
+
+/* ═══ BUTTONS ═══ */
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.8rem 1.8rem;border:none;cursor:pointer;font-family:var(--fn);font-size:.9rem;font-weight:700;border-radius:var(--rpill);transition:all .22s;text-decoration:none;line-height:1}
+.btn-pk{background:linear-gradient(135deg,var(--pk),var(--pk2));color:#fff;box-shadow:0 4px 16px rgba(255,79,160,.3)}
+.btn-pk:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(255,79,160,.4)}
+.btn-ol{background:#fff;color:var(--tx);border:2.5px solid var(--br)}
+.btn-ol:hover{border-color:var(--pk);color:var(--pk)}
+.btn-yl{background:var(--yl);color:var(--tx);box-shadow:0 4px 14px rgba(255,211,54,.3)}
+.btn-yl:hover{background:var(--yl2);transform:translateY(-2px)}
+.btn-wa{background:#25D366;color:#fff;box-shadow:0 4px 14px rgba(37,211,102,.3)}
+.btn-wa:hover{background:#1db954;transform:translateY(-2px)}
+.btn-sm{padding:.45rem 1.1rem;font-size:.8rem}
+.btn-lg{padding:1rem 2.2rem;font-size:1rem}
+.btn-full{width:100%;justify-content:center}
+
+/* ═══ HERO ═══ */
+.hero{
+  padding-top:70px;min-height:100vh;
+  background:linear-gradient(150deg,#fff8ff 0%,#f5f0ff 40%,#eaf5ff 100%);
+  display:grid;grid-template-columns:1fr 1fr;align-items:center;
+  position:relative;overflow:hidden;
+}
+.hero::before{content:'';position:absolute;top:-120px;right:-100px;width:550px;height:550px;border-radius:50%;background:radial-gradient(circle,rgba(255,79,160,.1),transparent 70%);pointer-events:none}
+.hero-l{padding:3.5rem 2rem 3.5rem 5rem;z-index:1;position:relative}
+.hero-tag{display:inline-flex;align-items:center;gap:.5rem;background:var(--yl-l);color:#7a5c00;padding:.4rem 1rem;border-radius:var(--rpill);font-size:.82rem;font-weight:800;margin-bottom:1.5rem;border:2px solid var(--yl)}
+.hero-h{font-family:var(--fd);font-size:clamp(2.6rem,4.8vw,4.2rem);line-height:1.05;margin-bottom:1rem}
+.hero-h .pk{color:var(--pk)}.hero-h .bl{color:var(--bl)}
+.hero-sub{font-size:1rem;color:var(--mu);line-height:1.75;max-width:430px;margin-bottom:.8rem;font-weight:600}
+.hero-brands{display:flex;align-items:center;gap:.6rem;margin-bottom:2rem;flex-wrap:wrap}
+.brand-pill{background:#fff;border:2px solid var(--br);border-radius:50px;padding:.35rem .9rem;font-size:.78rem;font-weight:800;color:var(--tx)}
+.hero-ctas{display:flex;gap:.85rem;flex-wrap:wrap;margin-bottom:2.5rem}
+.hero-stats{display:flex;gap:1.3rem;flex-wrap:wrap}
+.stat-b{background:#fff;border-radius:12px;padding:.7rem 1.1rem;text-align:center;box-shadow:var(--sh);border:2px solid var(--br)}
+.stat-n{font-family:var(--fd);font-size:1.5rem;color:var(--pk)}
+.stat-l{font-size:.68rem;color:var(--mu);font-weight:700}
+.hero-r{position:relative;display:flex;align-items:center;justify-content:center;padding:2rem;min-height:500px}
+.hero-logo-big{width:320px;height:auto;filter:drop-shadow(0 20px 48px rgba(255,79,160,.3));animation:float 3s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+.hft{position:absolute;background:#fff;border-radius:14px;padding:.65rem 1.1rem;box-shadow:var(--shh);display:flex;align-items:center;gap:.6rem;font-weight:700;font-size:.8rem;border-left:3px solid var(--gn)}
+.hft:nth-child(2){top:20%;left:-10px;animation:float 2.5s ease-in-out infinite}
+.hft:nth-child(3){bottom:25%;right:-5px;border-left-color:var(--bl);animation:float 3.2s ease-in-out infinite .4s}
+.hft:nth-child(4){top:52%;left:-25px;border-left-color:var(--yl);animation:float 2.8s ease-in-out infinite .9s}
+
+/* ═══ MARQUEE ═══ */
+.mq-wrap{background:linear-gradient(90deg,var(--pk),var(--pp),var(--bl),var(--pk));padding:.72rem 0;overflow:hidden}
+.mq-track{display:flex;animation:mq 18s linear infinite;white-space:nowrap}
+.mq-item{color:#fff;font-weight:800;font-size:.88rem;padding:0 1.8rem;display:flex;align-items:center;gap:.9rem;flex-shrink:0}
+.mq-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.5)}
+@keyframes mq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ═══ SECTIONS ═══ */
+section{padding:4.5rem 2rem}
+.si{max-width:1220px;margin:0 auto}
+.sh{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:2.5rem;flex-wrap:wrap;gap:1rem}
+.stag{display:inline-block;font-size:.74rem;font-weight:800;color:var(--pk);text-transform:uppercase;letter-spacing:.09em;margin-bottom:.4rem}
+.stit{font-family:var(--fd);font-size:clamp(1.7rem,3.3vw,2.6rem);color:var(--tx)}
+
+/* ═══ CAT GRID ═══ */
+.cat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:1rem}
+.cat-c{background:var(--cd);border-radius:var(--rr);padding:1.5rem 1rem;text-align:center;cursor:pointer;border:2.5px solid var(--br);transition:all .22s;position:relative;overflow:hidden}
+.cat-c:hover{transform:translateY(-6px);box-shadow:var(--shh);border-color:var(--pk)}
+.cat-c:hover .ce{transform:scale(1.2) rotate(-5deg)}
+.ce{font-size:2.8rem;display:block;margin-bottom:.75rem;transition:transform .22s}
+.cn{font-weight:800;font-size:.92rem;margin-bottom:.2rem}
+.ck{font-size:.73rem;color:var(--mu);font-weight:600}
+
+/* ═══ PRODUCT CARDS ═══ */
+.pgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.2rem}
+.pc{background:var(--cd);border-radius:var(--rr);overflow:hidden;cursor:pointer;border:2px solid var(--br);transition:all .22s}
+.pc:hover{transform:translateY(-5px);box-shadow:var(--shh);border-color:var(--pk)}
+.pc:hover .pq{opacity:1;transform:translateY(0)}
+.pi{aspect-ratio:1/1;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--pk-l)}
+.pi img{width:100%;height:100%;object-fit:cover;transition:transform .3s}
+.pc:hover .pi img{transform:scale(1.04)}
+.pi-em{font-size:5rem;transition:transform .22s}
+.pc:hover .pi-em{transform:scale(1.1)}
+.pb{position:absolute;top:.7rem;left:.7rem;padding:.2rem .65rem;border-radius:var(--rpill);font-size:.67rem;font-weight:800}
+.pb-new{background:var(--tx);color:#fff}.pb-sale{background:var(--rd);color:#fff}
+.pb-hot{background:var(--or);color:#fff}.pb-bestseller{background:var(--yl);color:var(--tx)}
+.pq{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(135deg,var(--pk),var(--pp));color:#fff;padding:.7rem;text-align:center;font-weight:800;font-size:.82rem;opacity:0;transform:translateY(100%);transition:all .22s;cursor:pointer;border:none;width:100%;font-family:var(--fn)}
+.pb2{padding:.9rem}
+.pc-cat{font-size:.7rem;font-weight:800;color:var(--pk);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.25rem}
+.pc-nm{font-weight:800;font-size:.88rem;color:var(--tx);margin-bottom:.45rem;line-height:1.3}
+.pc-pr{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+.p-cur{font-weight:900;font-size:1rem;color:var(--tx)}
+.p-old{text-decoration:line-through;color:var(--mu);font-size:.8rem}
+.p-off{color:var(--gn);font-size:.73rem;font-weight:800;background:var(--gn-l);padding:.1rem .45rem;border-radius:var(--rpill)}
+
+/* ═══ FILTER TABS ═══ */
+.ftabs{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:2rem}
+.ftab{padding:.45rem 1.1rem;border-radius:var(--rpill);border:2.5px solid var(--br);background:#fff;font-family:var(--fn);font-size:.82rem;font-weight:700;cursor:pointer;transition:all .18s;color:var(--mu)}
+.ftab.act,.ftab:hover{background:var(--pk);color:#fff;border-color:var(--pk)}
+
+/* ═══ PROMO ═══ */
+.promo-box{background:linear-gradient(135deg,#2d2347,#4a1d6e);border-radius:24px;padding:3.5rem;display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:center;position:relative;overflow:hidden}
+.promo-box::before{content:'🎊';position:absolute;top:-20px;right:7%;font-size:8rem;opacity:.12;pointer-events:none}
+.ptag{font-size:.78rem;font-weight:800;color:var(--yl);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.75rem}
+.ptit{font-family:var(--fd);font-size:clamp(1.8rem,3.5vw,3rem);color:#fff;line-height:1.1;margin-bottom:1.5rem}
+.ptit span{color:var(--yl)}
+.cpn-box{display:inline-flex;align-items:center;gap:1rem;background:rgba(255,255,255,.1);border:2px dashed rgba(255,255,255,.35);border-radius:12px;padding:.7rem 1.4rem;margin-bottom:1.5rem}
+.cpn-lbl{font-size:.7rem;font-weight:800;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.1em}
+.cpn-code{font-family:var(--fd);font-size:1.8rem;color:var(--yl);letter-spacing:.08em}
+.cpn-copy{background:var(--yl);color:var(--tx);border:none;padding:.35rem .9rem;border-radius:8px;font-family:var(--fn);font-size:.75rem;font-weight:800;cursor:pointer;transition:.2s}
+.cpn-copy:hover{background:var(--yl2)}
+.promo-pct{font-family:var(--fd);font-size:5.5rem;color:var(--yl);line-height:1;text-align:center}
+.promo-pct span{display:block;font-size:1.2rem;color:rgba(255,255,255,.65);font-family:var(--fn);font-weight:700}
+
+/* ═══ BRANDS SECTION ═══ */
+.brands-row{display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;margin-top:1.5rem}
+.brand-card{background:#fff;border:2px solid var(--br);border-radius:14px;padding:1rem 1.8rem;font-weight:800;font-size:.95rem;color:var(--tx);transition:all .22s;cursor:pointer}
+.brand-card:hover{border-color:var(--pk);transform:translateY(-3px);box-shadow:var(--sh)}
+
+/* ═══ WHY ═══ */
+.why-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.2rem}
+.wc{background:var(--cd);border-radius:var(--rr);padding:1.8rem 1.5rem;text-align:center;border:2px solid var(--br);transition:all .22s}
+.wc:hover{transform:translateY(-4px);box-shadow:var(--sh);border-color:var(--pk)}
+.wi{font-size:2.5rem;display:block;margin-bottom:1rem}
+.wt{font-weight:800;font-size:.95rem;margin-bottom:.4rem}
+.wd{font-size:.82rem;color:var(--mu);line-height:1.6;font-weight:600}
+
+/* ═══ DELIVERY HIGHLIGHT ═══ */
+.del-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+.del-card{border-radius:var(--rr);padding:2rem;border:2.5px solid}
+.del-card-local{background:linear-gradient(135deg,#fff8ff,var(--pk-l));border-color:var(--pk)}
+.del-card-pan{background:linear-gradient(135deg,#edf6ff,var(--bl-l));border-color:var(--bl)}
+.del-badge{display:inline-block;font-family:var(--fd);font-size:2.2rem;margin-bottom:.5rem}
+.del-title{font-family:var(--fd);font-size:1.4rem;margin-bottom:.5rem}
+.del-time{font-size:1.1rem;font-weight:900;color:var(--pk);margin-bottom:.4rem}
+.del-desc{font-size:.85rem;color:var(--mu);font-weight:600;line-height:1.6}
+
+/* ═══ REVIEWS ═══ */
+.rgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem}@media(max-width:700px){.rgrid{grid-template-columns:1fr}}
+.rc{background:var(--cd);border-radius:var(--rr);padding:1.8rem;border:2px solid var(--br);transition:all .22s}
+.rc:hover{box-shadow:var(--sh);border-color:var(--pk)}
+.rst{color:var(--yl);font-size:1rem;margin-bottom:.7rem}
+.rtx{font-size:.87rem;color:var(--tx);line-height:1.7;font-weight:600;font-style:italic;margin-bottom:1.2rem}
+.rau{display:flex;align-items:center;gap:.75rem}
+.rav{width:38px;height:38px;border-radius:50%;background:var(--pk);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1rem;flex-shrink:0}
+.rnm{font-weight:800;font-size:.83rem}
+.rme{font-size:.72rem;color:var(--mu);font-weight:600}
+
+/* ═══ NEWSLETTER ═══ */
+.nl-box{background:linear-gradient(135deg,var(--pk-l),var(--pp-l));border-radius:24px;padding:3.5rem;text-align:center}
+.nl-t{font-family:var(--fd);font-size:clamp(1.8rem,3vw,2.5rem);margin-bottom:.8rem}
+.nl-s{color:var(--mu);font-size:.93rem;font-weight:600;margin-bottom:2rem}
+.nl-f{display:flex;max-width:450px;margin:0 auto;border-radius:var(--rpill);overflow:hidden;box-shadow:var(--sh)}
+.nl-i{flex:1;padding:1rem 1.5rem;border:none;font-family:var(--fn);font-size:.9rem;outline:none}
+.nl-b{background:var(--pk);color:#fff;border:none;padding:1rem 1.8rem;font-family:var(--fn);font-weight:700;cursor:pointer;white-space:nowrap}
+
+/* ═══ WA SECTION ═══ */
+.wa-sec{background:var(--tx);border-radius:24px;padding:3rem;text-align:center}
+.wa-sec-t{font-family:var(--fd);font-size:2.2rem;color:#fff;margin-bottom:.8rem}
+.wa-sec-t .gr{color:#25D366}
+.wa-sec-s{color:rgba(255,255,255,.6);font-weight:600;margin-bottom:2rem;max-width:480px;margin-left:auto;margin-right:auto;line-height:1.7}
+
+/* ═══ INFO BAR ═══ */
+.info-bar{background:linear-gradient(135deg,var(--pk-l),var(--pp-l));padding:1.2rem 2rem;display:flex;gap:2rem;justify-content:center;flex-wrap:wrap;border-bottom:2px solid var(--br)}
+.info-item{display:flex;align-items:center;gap:.5rem;font-size:.83rem;font-weight:700;color:var(--tx)}
+
+/* ═══ FOOTER ═══ */
+footer{background:var(--tx);color:#fff;padding:4rem 2rem 2rem}
+.fi{max-width:1220px;margin:0 auto}
+.fg{display:grid;grid-template-columns:2.2fr 1fr 1fr 1fr;gap:3rem;margin-bottom:3rem}
+.f-logo-img{height:56px;width:auto;border-radius:10px;margin-bottom:.8rem}
+.fdesc{color:rgba(255,255,255,.5);font-size:.83rem;line-height:1.7;font-weight:600;max-width:270px}
+.f-addr{color:rgba(255,255,255,.45);font-size:.78rem;font-weight:600;line-height:1.7;margin-top:.8rem}
+.fh{font-size:.72rem;font-weight:800;color:var(--pk);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1rem}
+.fl{list-style:none;display:flex;flex-direction:column;gap:.55rem}
+.fl a{color:rgba(255,255,255,.5);text-decoration:none;font-size:.83rem;font-weight:600;cursor:pointer;transition:color .18s}
+.fl a:hover{color:#fff}
+.fb{border-top:1px solid rgba(255,255,255,.1);padding-top:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
+.fcopy{font-size:.77rem;color:rgba(255,255,255,.3);font-weight:600}
+.fpay{display:flex;gap:.5rem;flex-wrap:wrap}
+.fpb{background:rgba(255,255,255,.1);padding:.25rem .65rem;border-radius:6px;font-size:.67rem;font-weight:800;color:rgba(255,255,255,.5)}
+
+/* ═══ SHOP ═══ */
+.shop-hero{background:linear-gradient(135deg,var(--pk-l),var(--yl-l));padding:7rem 2rem 3rem;text-align:center}
+.shop-hero h1{font-family:var(--fd);font-size:2.8rem;margin-bottom:.5rem}
+.sl{max-width:1220px;margin:0 auto;padding:2rem;display:grid;grid-template-columns:240px 1fr;gap:2rem;align-items:start}
+.sidebar{background:var(--cd);border-radius:var(--rr);padding:1.5rem;border:2px solid var(--br);position:sticky;top:82px}
+.sb-hd{font-weight:800;font-size:.84rem;text-transform:uppercase;letter-spacing:.06em;margin-bottom:1.2rem;display:flex;justify-content:space-between;align-items:center}
+.sb-clr{background:none;border:none;color:var(--pk);font-size:.77rem;font-weight:700;cursor:pointer;font-family:var(--fn)}
+.fg-b{margin-bottom:1.4rem;padding-bottom:1.4rem;border-bottom:2px solid var(--br)}
+.fg-b:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.fg-bt{font-weight:800;font-size:.82rem;margin-bottom:.7rem}
+.fo{display:flex;align-items:center;gap:.55rem;cursor:pointer;font-size:.82rem;color:var(--mu);padding:.2rem 0;font-weight:600}
+.fo input{accent-color:var(--pk)}
+.sc{display:flex;flex-wrap:wrap;gap:.4rem}
+.sch{padding:.28rem .58rem;border:2px solid var(--br);border-radius:8px;font-size:.73rem;font-weight:700;cursor:pointer;transition:all .18s}
+.sch.act,.sch:hover{border-color:var(--pk);background:var(--pk-l);color:var(--pk)}
+.pr-row{display:flex;gap:.5rem}
+.pr-i{width:100%;padding:.48rem .7rem;border:2px solid var(--br);border-radius:8px;font-family:var(--fn);font-size:.8rem;outline:none}
+.pr-i:focus{border-color:var(--pk)}
+.shop-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:.75rem}
+.sort-s{padding:.52rem 1rem;border:2px solid var(--br);border-radius:var(--rpill);font-family:var(--fn);font-size:.82rem;font-weight:700;outline:none;background:#fff;cursor:pointer;color:var(--tx)}
+
+/* ═══ PRODUCT DETAIL ═══ */
+.dp{max-width:1100px;margin:0 auto;padding:90px 2rem 3rem}
+.bc{display:flex;gap:.5rem;font-size:.78rem;color:var(--mu);margin-bottom:2rem;align-items:center;font-weight:600}
+.bc span{cursor:pointer;transition:color .2s}.bc span:hover{color:var(--pk)}
+.bc-sep{color:var(--br)}
+.dg{display:grid;grid-template-columns:1fr 1fr;gap:3.5rem}
+.gm{background:var(--pk-l);border-radius:var(--rr);aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;font-size:8rem;margin-bottom:.8rem;border:2px solid var(--br);overflow:hidden}
+.gm img{width:100%;height:100%;object-fit:cover}
+.gths{display:flex;gap:.6rem;flex-wrap:wrap}
+.gth{width:68px;height:68px;background:var(--pk-l);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:2.5px solid transparent;transition:all .18s;overflow:hidden}
+.gth.on,.gth:hover{border-color:var(--pk)}
+.gth img{width:100%;height:100%;object-fit:cover}
+.dbrand{font-size:.73rem;font-weight:800;color:var(--pk);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.4rem}
+.dname{font-family:var(--fd);font-size:2rem;color:var(--tx);margin-bottom:.6rem;line-height:1.15}
+.drat{display:flex;align-items:center;gap:.5rem;margin-bottom:1.2rem}
+.dstars{color:var(--yl)}
+.drc{font-size:.8rem;color:var(--mu);font-weight:700}
+.dpr{margin-bottom:.5rem}
+.dpc{font-family:var(--fd);font-size:2rem;color:var(--tx)}
+.dpo{text-decoration:line-through;color:var(--mu);font-size:1rem;margin-right:.5rem}
+.dps{color:var(--gn);font-size:.83rem;font-weight:800;background:var(--gn-l);padding:.2rem .7rem;border-radius:var(--rpill)}
+.dage{background:var(--yl-l);border:2px solid var(--yl);border-radius:10px;padding:.45rem 1rem;font-size:.8rem;font-weight:700;color:#8a6800;margin-bottom:1.5rem;display:inline-block}
+.ddesc{font-size:.88rem;color:var(--mu);line-height:1.7;font-weight:600;margin-bottom:1.5rem}
+.ds{margin-bottom:1.4rem}
+.dl{font-size:.74rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.6rem}
+.sopts{display:flex;flex-wrap:wrap;gap:.5rem}
+.sopt{padding:.45rem .75rem;border:2.5px solid var(--br);border-radius:10px;cursor:pointer;font-size:.8rem;font-weight:700;transition:all .18s;background:#fff}
+.sopt:hover,.sopt.on{border-color:var(--pk);background:var(--pk-l);color:var(--pk)}
+.cdots{display:flex;gap:.6rem}
+.cdot{width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent;outline:2px solid transparent;outline-offset:2px;transition:all .18s}
+.cdot.on{outline-color:var(--tx)}
+.qrow{display:flex;align-items:center;border:2px solid var(--br);border-radius:var(--rpill);overflow:hidden;width:fit-content}
+.qbtn{width:40px;height:40px;background:none;border:none;font-size:1.2rem;cursor:pointer;font-weight:700;display:flex;align-items:center;justify-content:center;transition:.18s}
+.qbtn:hover{background:var(--pk-l)}
+.qnum{width:50px;height:40px;text-align:center;font-weight:800;font-size:.95rem;border-left:2px solid var(--br);border-right:2px solid var(--br);display:flex;align-items:center;justify-content:center}
+.act-row{display:flex;gap:.75rem;margin-bottom:.75rem;flex-wrap:wrap}
+.wsh{width:50px;height:50px;border:2.5px solid var(--br);border-radius:50%;background:#fff;cursor:pointer;font-size:1.2rem;display:flex;align-items:center;justify-content:center;transition:all .22s;flex-shrink:0}
+.wsh:hover{border-color:var(--rd);color:var(--rd)}
+.dfeats{display:flex;flex-direction:column;gap:.6rem;padding-top:1.2rem;border-top:2px solid var(--br)}
+.dfr{display:flex;align-items:center;gap:.6rem;font-size:.84rem;color:var(--mu);font-weight:600}
+
+/* ═══ CART ═══ */
+.cp{max-width:1100px;margin:0 auto;padding:90px 2rem 3rem}
+.ct{font-family:var(--fd);font-size:2.5rem;margin-bottom:2rem}
+.cg{display:grid;grid-template-columns:1fr 360px;gap:2rem;align-items:start}
+.ci{display:grid;grid-template-columns:80px 1fr auto;gap:1rem;padding:1.2rem;background:var(--cd);border-radius:var(--rr);border:2px solid var(--br);margin-bottom:.8rem;align-items:center}
+.ci-img{width:80px;height:80px;background:var(--pk-l);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:2.5rem;overflow:hidden}
+.ci-img img{width:100%;height:100%;object-fit:cover}
+.ci-nm{font-weight:800;font-size:.9rem;margin-bottom:.2rem}
+.ci-me{font-size:.75rem;color:var(--mu);font-weight:600;margin-bottom:.6rem}
+.ciqc{display:flex;align-items:center;border:2px solid var(--br);border-radius:8px;width:fit-content;overflow:hidden}
+.cqb{width:28px;height:28px;background:none;border:none;font-size:1rem;cursor:pointer;font-weight:700;display:flex;align-items:center;justify-content:center;transition:.18s}
+.cqb:hover{background:var(--pk-l)}
+.cqn{width:36px;height:28px;text-align:center;font-weight:800;font-size:.88rem;border-left:2px solid var(--br);border-right:2px solid var(--br);display:flex;align-items:center;justify-content:center}
+.ci-pr{font-weight:900;font-size:1rem;text-align:right}
+.ci-rm{display:block;color:var(--mu);background:none;border:none;font-size:.73rem;font-weight:700;cursor:pointer;text-decoration:underline;margin-top:.4rem;text-align:right;font-family:var(--fn)}
+.ci-rm:hover{color:var(--rd)}
+.ob{background:var(--cd);border-radius:var(--rr);padding:1.8rem;border:2px solid var(--br);position:sticky;top:82px}
+.obt{font-family:var(--fd);font-size:1.4rem;margin-bottom:1.5rem}
+.coup-row{display:flex;border:2px solid var(--br);border-radius:10px;overflow:hidden;margin-bottom:1.5rem}
+.ci2{flex:1;padding:.7rem 1rem;border:none;font-family:var(--fn);font-size:.85rem;outline:none}
+.ap-btn{background:var(--tx);color:#fff;border:none;padding:.7rem 1.1rem;font-family:var(--fn);font-weight:700;cursor:pointer;font-size:.82rem}
+.srow{display:flex;justify-content:space-between;font-size:.87rem;font-weight:700;margin-bottom:.75rem}
+.stot{border-top:2px solid var(--br);padding-top:.75rem;margin-top:.35rem;font-size:1rem;font-weight:900}
+.tr-bs{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.4rem;padding-top:1.2rem;border-top:2px solid var(--br)}
+.trb{font-size:.73rem;font-weight:700;color:var(--mu);display:flex;align-items:center;gap:.3rem}
+
+/* ═══ CHECKOUT ═══ */
+.chp{max-width:1100px;margin:0 auto;padding:90px 2rem 3rem}
+.cht{font-family:var(--fd);font-size:2.5rem;margin-bottom:2rem}
+.chg{display:grid;grid-template-columns:1fr 380px;gap:2rem;align-items:start}
+.ch-st{font-family:var(--fd);font-size:1.4rem;margin-bottom:1.2rem;margin-top:2rem}
+.ch-st:first-child{margin-top:0}
+.fg2{margin-bottom:1rem}
+.fl2{display:block;font-size:.74rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem}
+.fi2{width:100%;padding:.78rem 1rem;border:2.5px solid var(--br);border-radius:12px;font-family:var(--fn);font-size:.9rem;outline:none;transition:border-color .18s;background:#fff}
+.fi2:focus{border-color:var(--pk)}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.po{display:flex;flex-direction:column;gap:.75rem;margin-bottom:1.5rem}
+.popt{display:flex;align-items:center;gap:1rem;padding:1rem 1.2rem;border:2.5px solid var(--br);border-radius:12px;cursor:pointer;transition:all .18s}
+.popt.on{border-color:var(--pk);background:var(--pk-l)}
+.popt input{accent-color:var(--pk)}
+.pon{font-weight:800;font-size:.87rem}
+.pos{font-size:.73rem;color:var(--mu);font-weight:600}
+
+/* ═══ SUCCESS ═══ */
+.sucp{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:2rem;background:linear-gradient(135deg,var(--pk-l),var(--pp-l));padding-top:4rem}
+.suci{max-width:560px;width:100%;text-align:center}
+.sucem{font-size:5rem;animation:bou .6s ease infinite alternate}
+@keyframes bou{from{transform:translateY(0)}to{transform:translateY(-12px)}}
+.suct{font-family:var(--fd);font-size:2.8rem;margin-bottom:.8rem}
+.sucb{background:#fff;border-radius:var(--rr);padding:2rem;text-align:left;margin-bottom:2rem;border:2px solid var(--br)}
+.odr{display:flex;justify-content:space-between;font-size:.87rem;font-weight:700;padding:.5rem 0;border-bottom:1px solid var(--br)}
+.odr:last-child{border-bottom:none}
+
+/* ═══ CONTENT ═══ */
+.conp{max-width:920px;margin:0 auto;padding:90px 2rem 4rem}
+.conh{text-align:center;padding:3rem 0 2.5rem}
+.conh-t{font-family:var(--fd);font-size:clamp(2.5rem,5vw,4rem);margin-bottom:1rem}
+.agrid{display:grid;grid-template-columns:1fr 1fr;gap:3rem;margin:3rem 0;align-items:center}
+.aimg{aspect-ratio:4/5;background:var(--pk-l);border-radius:var(--rr);display:flex;align-items:center;justify-content:center;font-size:6rem;border:2px solid var(--br);overflow:hidden}
+.aimg img{width:100%;height:100%;object-fit:cover}
+.avals{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin:2rem 0}
+.avc{background:var(--cd);border-radius:var(--rr);padding:1.5rem;border:2px solid var(--br);text-align:center}
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:2.5rem;margin:2rem 0}
+.cii{display:flex;gap:1rem;margin-bottom:1.8rem}
+.ciic{font-size:1.5rem;width:2.5rem;flex-shrink:0;text-align:center}
+.pols{margin-bottom:2.5rem}
+.polh{font-family:var(--fd);font-size:1.6rem;margin-bottom:.8rem}
+.polp{font-size:.87rem;color:var(--mu);line-height:1.8;font-weight:600}
+
+/* ═══ WA FLOAT ═══ */
+.waf{position:fixed;bottom:2rem;right:2rem;z-index:890;background:#25D366;color:#fff;border:none;border-radius:50%;width:58px;height:58px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;cursor:pointer;box-shadow:0 6px 24px rgba(37,211,102,.4);transition:transform .22s;text-decoration:none}
+.waf:hover{transform:scale(1.12)}
+
+/* ═══ TOAST ═══ */
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(120px);background:var(--tx);color:#fff;padding:1rem 1.6rem;border-radius:var(--rpill);font-size:.87rem;font-weight:700;z-index:9999;transition:transform .32s cubic-bezier(.34,1.56,.64,1);display:flex;align-items:center;gap:.7rem;box-shadow:0 8px 32px rgba(0,0,0,.25);min-width:260px;justify-content:center}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.t-ico{color:var(--pk)}
+
+/* ═══ MINI FOOTER ═══ */
+.mf{background:var(--tx);color:#fff;padding:1.8rem 2rem;text-align:center}
+.mfl-img{height:40px;width:auto;border-radius:8px;margin:0 auto .4rem}
+
+/* ══════════════════════════════════════
+   ADMIN PANEL — FIXED FULL WIDTH LAYOUT
+══════════════════════════════════════ */
+.adm-login-pg{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--ab);padding:1rem}
+.adm-login-box{background:var(--asb);border:1px solid var(--abr);border-radius:20px;padding:3rem;width:100%;max-width:420px;box-shadow:0 24px 64px rgba(0,0,0,.5)}
+.al-em{font-size:2.5rem;text-align:center;display:block;margin-bottom:.5rem}
+.al-logo-img{height:56px;width:auto;border-radius:10px;margin:0 auto .5rem;display:block}
+.al-t{font-family:var(--fd);font-size:1.6rem;color:var(--at);text-align:center}
+.al-t span{color:var(--aa)}
+.al-s{font-size:.72rem;color:var(--am);font-weight:700;letter-spacing:.1em;text-transform:uppercase;text-align:center;display:block;margin-bottom:2rem}
+.al-lbl{display:block;font-size:.72rem;font-weight:800;color:var(--am);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.4rem;margin-top:1rem}
+.al-inp{width:100%;padding:.85rem 1rem;border:1.5px solid var(--abr);border-radius:10px;background:rgba(255,255,255,.06);color:var(--at);font-family:var(--fn);font-size:.9rem;outline:none;transition:border-color .18s}
+.al-inp::placeholder{color:var(--am)}.al-inp:focus{border-color:var(--aa)}
+.al-btn{width:100%;margin-top:1.5rem;padding:1rem;background:linear-gradient(135deg,var(--aa),var(--aa2));color:#fff;border:none;border-radius:12px;font-family:var(--fn);font-size:.95rem;font-weight:800;cursor:pointer;transition:.22s}
+.al-btn:hover{opacity:.9;transform:translateY(-2px)}
+.al-err{background:rgba(255,82,82,.15);border:1px solid rgba(255,82,82,.3);border-radius:8px;padding:.7rem 1rem;font-size:.82rem;color:#ff5252;font-weight:700;margin-top:1rem;display:none}
+.al-err.show{display:block}
+.al-ft{text-align:center;margin-top:1.2rem;font-size:.72rem;color:var(--am);font-weight:600}
+.al-ft a{color:var(--aa)}
+
+/* ADMIN — full width, NO sidebar squish */
+.adm-wrap{display:flex;flex-direction:column;min-height:100vh;background:var(--ab)}
+
+/* TOPBAR with horizontal tabs */
+.adm-tb{
+  position:sticky;top:0;z-index:600;
+  background:var(--asb);border-bottom:1px solid var(--abr);
+  display:flex;align-items:stretch;
+  min-height:62px;
+  box-shadow:0 2px 20px rgba(0,0,0,.4);
+  flex-shrink:0;
+}
+.adm-tb-logo{
+  display:flex;align-items:center;gap:.7rem;
+  padding:0 1.3rem;border-right:1px solid var(--abr);
+  min-width:210px;flex-shrink:0;
+}
+.adm-tb-logo-img{height:38px;width:auto;border-radius:8px}
+.adm-tb-logo-sub{font-size:.6rem;color:var(--am);font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+.adm-tabs{display:flex;align-items:stretch;flex:1;overflow-x:auto}
+.adm-tabs::-webkit-scrollbar{height:0}
+.adm-tab{
+  display:flex;align-items:center;gap:.42rem;
+  padding:0 1.05rem;height:100%;min-height:62px;
+  background:none;border:none;border-bottom:3px solid transparent;
+  color:var(--am);font-family:var(--fn);font-size:.79rem;font-weight:700;
+  cursor:pointer;transition:all .18s;white-space:nowrap;flex-shrink:0;
+}
+.adm-tab:hover{color:var(--at);background:rgba(255,255,255,.04)}
+.adm-tab.on{color:var(--aa);border-bottom-color:var(--aa);background:rgba(192,132,252,.09)}
+.adm-tab .tco{font-size:.95rem}
+.adm-tab .tbdg{background:var(--aa2);color:#fff;border-radius:50px;font-size:.6rem;font-weight:800;padding:.1rem .45rem;margin-left:.25rem}
+.adm-tb-right{display:flex;align-items:center;gap:.65rem;padding:0 1rem;border-left:1px solid var(--abr);flex-shrink:0}
+.adm-wa-btn{display:flex;align-items:center;gap:.4rem;background:#25D366;color:#fff;padding:.38rem .9rem;border-radius:50px;font-size:.72rem;font-weight:700;text-decoration:none;border:none;cursor:pointer;font-family:var(--fn)}
+.adm-ghost{background:transparent;color:var(--am);border:1.5px solid var(--abr);padding:.35rem .85rem;border-radius:50px;font-family:var(--fn);font-size:.72rem;font-weight:700;cursor:pointer;transition:all .18s}
+.adm-ghost:hover{border-color:var(--aa);color:var(--aa)}
+.adm-uarea{display:flex;align-items:center;gap:.55rem}
+.adm-av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--aa),var(--aa2));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.75rem;color:#fff}
+.adm-un{font-size:.75rem;color:var(--am);font-weight:700}
+
+/* BODY — full width */
+.adm-body{flex:1;padding:1.8rem;max-width:1440px;width:100%;margin:0 auto}
+
+/* Section switch */
+.asec{display:none}.asec.on{display:block}
+
+/* Breadcrumb */
+.adm-bc{font-size:.77rem;color:var(--am);font-weight:700;margin-bottom:1.4rem}
+.adm-bc span{color:var(--aa)}
+
+/* Stats */
+.astats{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
+.asc{background:var(--ac);border-radius:14px;padding:1.3rem;border:1px solid var(--abr);display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}
+.asc-ico{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.35rem;flex-shrink:0}
+.asc-lbl{font-size:.66rem;color:var(--am);font-weight:800;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.35rem}
+.asc-val{font-family:var(--fd);font-size:2rem;color:var(--at);line-height:1.1}
+.asc-ch{font-size:.7rem;color:var(--gn);font-weight:700;margin-top:.2rem}
+
+/* Cards */
+.acard{background:var(--ac);border-radius:14px;border:1px solid var(--abr);overflow:hidden;margin-bottom:1.2rem}
+.acard-hd{padding:1rem 1.4rem;border-bottom:1px solid var(--abr);display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.02)}
+.acard-t{font-weight:800;font-size:.9rem;color:var(--at)}
+.acard-sub{font-size:.72rem;color:var(--am)}
+.acard-bd{padding:1.4rem}
+
+/* Table */
+.at{width:100%;border-collapse:collapse;font-size:.81rem}
+.at th{text-align:left;padding:.6rem 1rem;font-size:.64rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--am);background:rgba(255,255,255,.025);border-bottom:1px solid var(--abr)}
+.at td{padding:.82rem 1rem;border-bottom:1px solid var(--abr);color:var(--at);vertical-align:middle}
+.at tr:last-child td{border-bottom:none}
+.at tbody tr:hover td{background:rgba(255,255,255,.025)}
+.at-thumb{width:40px;height:40px;border-radius:8px;object-fit:cover;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;overflow:hidden}
+
+/* Status pills */
+.sp{display:inline-flex;align-items:center;gap:.3rem;padding:.18rem .65rem;border-radius:50px;font-size:.65rem;font-weight:800;text-transform:uppercase}
+.sp::before{content:'';width:5px;height:5px;border-radius:50%}
+.sp-p{background:rgba(252,211,77,.12);color:#fcd34d}.sp-p::before{background:#fcd34d}
+.sp-pa{background:rgba(91,184,255,.12);color:#5bb8ff}.sp-pa::before{background:#5bb8ff}
+.sp-sh{background:rgba(167,139,250,.15);color:var(--aa)}.sp-sh::before{background:var(--aa)}
+.sp-de{background:rgba(78,203,113,.12);color:#4ecb71}.sp-de::before{background:#4ecb71}
+.sp-ac{background:rgba(78,203,113,.12);color:#4ecb71}.sp-ac::before{background:#4ecb71}
+.sp-dr{background:rgba(156,163,175,.12);color:#9ca3af}.sp-dr::before{background:#9ca3af}
+.sp-oo{background:rgba(255,82,82,.12);color:#ff5252}.sp-oo::before{background:#ff5252}
+
+/* Action bar */
+.atbar{display:flex;gap:.75rem;align-items:center;margin-bottom:1.2rem;flex-wrap:wrap}
+.as-inp{padding:.56rem 1rem;border:1px solid var(--abr);border-radius:50px;background:rgba(255,255,255,.06);color:var(--at);font-family:var(--fn);font-size:.8rem;outline:none;width:210px}
+.as-inp::placeholder{color:var(--am)}.as-inp:focus{border-color:var(--aa)}
+.as-sel{padding:.5rem .9rem;border:1px solid var(--abr);border-radius:50px;background:rgba(255,255,255,.06);color:var(--at);font-family:var(--fn);font-size:.77rem;font-weight:700;outline:none;cursor:pointer}
+.as-sel option{background:var(--asb);color:var(--at)}
+.abt{background:var(--aa);color:#fff;border:none;padding:.5rem 1.2rem;border-radius:50px;font-family:var(--fn);font-size:.78rem;font-weight:800;cursor:pointer;transition:all .18s;display:inline-flex;align-items:center;gap:.35rem}.abt:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.abt:hover{background:var(--aa2);transform:translateY(-1px)}
+.abt-o{background:transparent;color:var(--am);border:1px solid var(--abr);padding:.35rem .85rem;border-radius:50px;font-family:var(--fn);font-size:.75rem;font-weight:700;cursor:pointer;transition:all .18s}
+.abt-o:hover{border-color:var(--aa);color:var(--aa)}
+.abt-d{background:transparent;color:#ff5252;border:1px solid rgba(255,82,82,.3);padding:.35rem .85rem;border-radius:50px;font-family:var(--fn);font-size:.75rem;font-weight:700;cursor:pointer;transition:all .18s}
+.abt-d:hover{background:rgba(255,82,82,.1)}
+
+/* Admin Form */
+.afl{display:block;font-size:.71rem;font-weight:800;color:var(--am);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem;margin-top:1.1rem}
+.afl:first-child{margin-top:0}
+.afin{width:100%;padding:.7rem 1rem;border:1.5px solid var(--abr);border-radius:10px;background:rgba(255,255,255,.06);color:var(--at);font-family:var(--fn);font-size:.85rem;outline:none;transition:border-color .18s;display:block}
+.afin::placeholder{color:var(--am)}.afin:focus{border-color:var(--aa)}
+.afin option{background:var(--asb)}
+.afta{min-height:90px;resize:vertical}
+.afgrid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+
+/* Product form: main + right panel */
+.prod-grid{display:grid;grid-template-columns:1fr 330px;gap:1.5rem;align-items:start}
+
+/* Image upload */
+.upzone{border:2px dashed var(--abr);border-radius:12px;padding:2rem;text-align:center;cursor:pointer;transition:all .22s;background:rgba(255,255,255,.025);position:relative;overflow:hidden}
+.upzone:hover{border-color:var(--aa);background:rgba(192,132,252,.05)}
+.upzone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.up-ico{font-size:2rem;margin-bottom:.5rem}
+.up-t{color:var(--at);font-weight:700;font-size:.85rem}
+.up-s{color:var(--am);font-size:.74rem;margin-top:.25rem}
+.img-prev{display:flex;gap:.7rem;flex-wrap:wrap;margin-top:.9rem}
+.ipi{position:relative;width:80px;height:80px;border-radius:10px;overflow:hidden;border:1.5px solid var(--abr)}
+.ipi img{width:100%;height:100%;object-fit:cover}
+.ipd{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.75);border:none;color:#fff;width:18px;height:18px;border-radius:50%;font-size:.65rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+/* Chart */
+.ch-bars{display:flex;align-items:flex-end;gap:.4rem;height:100px;margin-bottom:1.7rem}
+.ch-bar{flex:1;background:rgba(192,132,252,.2);border-radius:4px 4px 0 0;position:relative;cursor:pointer;min-height:4px;transition:background .18s}
+.ch-bar:hover{background:var(--aa)}
+.ch-lbl{position:absolute;bottom:-1.4rem;left:50%;transform:translateX(-50%);font-size:.6rem;color:var(--am);font-weight:700;white-space:nowrap}
+
+/* ═══ RESPONSIVE ═══ */
+@media(max-width:1100px){
+  .hero{grid-template-columns:1fr;padding:5rem 2rem 3rem;text-align:center}.hero-r{display:none}
+  .hero-ctas,.hero-stats{justify-content:center}.hero-brands{justify-content:center}
+  .cat-grid{grid-template-columns:repeat(3,1fr)}.pgrid{grid-template-columns:repeat(2,1fr)}
+  .why-grid{grid-template-columns:repeat(2,1fr)}.promo-box{grid-template-columns:1fr;gap:2rem}
+  .del-grid{grid-template-columns:1fr}.fg{grid-template-columns:1fr 1fr}
+  .rgrid{grid-template-columns:1fr}.sl{grid-template-columns:1fr}.sidebar{position:static}
+  .dg,.cg,.chg,.agrid,.cgrid{grid-template-columns:1fr}
+  .astats{grid-template-columns:repeat(2,1fr)}.prod-grid{grid-template-columns:1fr}
+}
+@media(max-width:640px){
+  #siteNav{padding:0 1rem}.nav-links{display:none}.burger{display:flex}
+  .cat-grid{grid-template-columns:repeat(2,1fr)}.pgrid{grid-template-columns:repeat(2,1fr);gap:.75rem}
+  .avals{grid-template-columns:1fr}.nl-f{flex-direction:column;border-radius:12px}
+  .nl-i{border-radius:12px 12px 0 0}.nl-b{border-radius:0 0 12px 12px}
+  .fg{grid-template-columns:1fr}.astats{grid-template-columns:1fr 1fr}
+  .afgrid,.fr2{grid-template-columns:1fr}
+  .adm-tab .tlbl{display:none}.adm-tab{padding:0 .7rem}
+  .adm-tb-logo{min-width:auto;padding:0 .8rem}.adm-tb-logo-sub{display:none}
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.fa{animation:fadeUp .5s ease both}.fa2{animation:fadeUp .5s .12s ease both}.fa3{animation:fadeUp .5s .24s ease both}
+
+/* ── Sync indicator ── */
+#sync-indicator{position:fixed;top:80px;right:1.5rem;z-index:9990;background:linear-gradient(135deg,#4ecb71,#22c55e);color:#fff;padding:.5rem 1.1rem;border-radius:50px;font-size:.8rem;font-weight:700;display:none;align-items:center;gap:.5rem;box-shadow:0 4px 18px rgba(78,203,113,.4);animation:fadeUp .4s ease}
+#sync-indicator::before{content:'';width:8px;height:8px;background:#fff;border-radius:50%;animation:pulse 1s ease infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.7)}}
+
+/* ── Firebase setup banner ── */
+#fb-setup-reminder{display:none;align-items:center;gap:1rem;background:rgba(252,211,77,.12);border:1.5px solid rgba(252,211,77,.4);border-radius:12px;padding:1rem 1.4rem;margin-bottom:1.2rem;flex-wrap:wrap}
+#fb-setup-reminder .fbr-ico{font-size:1.4rem}
+#fb-setup-reminder .fbr-txt{flex:1;font-size:.82rem;color:var(--at);font-weight:700;min-width:200px}
+#fb-setup-reminder .fbr-txt small{display:block;color:var(--am);font-weight:600;font-size:.75rem;margin-top:.15rem}
+#fb-setup-reminder .fbr-btn{background:var(--aa);color:#fff;border:none;padding:.45rem 1rem;border-radius:50px;font-family:var(--fn);font-size:.75rem;font-weight:800;cursor:pointer;white-space:nowrap}
+
+/* ── Offline badge on products ── */
+.offline-badge{display:inline-flex;align-items:center;gap:.3rem;background:rgba(252,211,77,.15);color:#fcd34d;border-radius:50px;font-size:.63rem;font-weight:800;padding:.15rem .6rem;margin-left:.4rem}
+</style>
+</head>
+<body>
+
+<!-- WA FLOAT -->
+<a class="waf" href="https://wa.me/919380013093?text=Hi%2C%20I%20want%20to%20order%20from%20WAA%20Kids%20Closet" target="_blank" title="Chat on WhatsApp">
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
+</a>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><span class="t-ico" id="tIco">✨</span><span id="tMsg">Done!</span></div>
+<div id="sync-indicator">🔄 Products synced!</div>
+
+<!-- NAVBAR -->
+<nav id="siteNav">
+  <div class="nav-logo" onclick="goPage('home')">
+    <img class="nav-logo-img" src="logo.png" alt="WAA Kids Closet Logo">
+    <div>
+      <div class="nav-logo-txt">WAA <span>Kids</span> Closet</div>
+      <div class="nav-logo-sub">Affordable Branded Kidswear for Every Occasion</div>
+    </div>
+  </div>
+  <ul class="nav-links">
+    <li><a onclick="goPage('home')">🏠 Home</a></li>
+    <li><a onclick="goPage('shop')">👗 Shop</a></li>
+    <li><a onclick="goPage('about')">💛 About</a></li>
+    <li><a onclick="goPage('contact')">📞 Contact</a></li>
+    <li><a onclick="goPage('policy')">📋 Policies</a></li>
+  </ul>
+  <div class="nav-acts">
+    <button class="cart-btn" onclick="goPage('cart')">🛒 <span class="cbadge" id="cBadge">0</span></button>
+    <button class="adm-nav-btn" onclick="goPage('admin-login')">Admin ↗</button>
+    <button class="burger" onclick="togMob()"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+<div class="mob-nav" id="mobNav">
+  <a onclick="goPage('home');clsMob()">🏠 Home</a>
+  <a onclick="goPage('shop');clsMob()">👗 Shop</a>
+  <a onclick="goPage('about');clsMob()">💛 About</a>
+  <a onclick="goPage('contact');clsMob()">📞 Contact</a>
+  <a onclick="goPage('policy');clsMob()">📋 Policies</a>
+  <a onclick="goPage('cart');clsMob()">🛒 Cart</a>
+</div>
+
+<!-- ═══════════════ HOME ═══════════════ -->
+<div class="page active" id="page-home">
+
+  <!-- INFO BAR -->
+  <div class="info-bar" style="margin-top:115px">
+    <div class="info-item">⚡ 2-Hour Delivery in Harihar &amp; Davangere</div>
+    <div class="info-item">🚚 Free Shipping on Orders Above ₹999</div>
+    <div class="info-item">📦 ₹49 Shipping for Orders Below ₹999</div>
+    <div class="info-item">💳 COD Available</div>
+    <div class="info-item">🇮🇳 PAN India Shipping</div>
+    <div class="info-item">↩️ 48-Hour Easy Returns</div>
+  </div>
+
+  <!-- OFFER BANNER -->
+  <div style="background:linear-gradient(135deg,#ff4fa0,#a855f7);padding:.75rem 1.5rem;text-align:center;cursor:pointer" onclick="goPage('shop')">
+    <div style="color:#fff;font-weight:800;font-size:.92rem;letter-spacing:.01em">
+      🎉 <span style="text-decoration:underline;text-underline-offset:3px">GRAND SALE ON NOW</span> — Up to 40% OFF on All Kids Wear! Use code <span style="background:rgba(255,255,255,.25);padding:.1rem .5rem;border-radius:20px;letter-spacing:.05em">WAA40</span> at checkout 🛍️
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <section style="padding:0">
+    <div class="hero" style="padding-top:0">
+      <div class="hero-l">
+        <div class="hero-tag fa">🎉 New Arrivals Every Week</div>
+        <h1 class="hero-h fa2">Adorable Kids<br>Fashion at <span class="pk">Affordable</span><br><span class="bl">Prices!</span></h1>
+        <p class="hero-sub fa3">Premium branded kidswear for ages 0–14 years. Babyhug, Zara &amp; more brands at surprisingly low prices!</p>
+        <div class="hero-brands fa3">
+          <span style="font-size:.72rem;color:var(--mu);font-weight:700">Brands Available:</span>
+          <span class="brand-pill">🧸 Babyhug</span>
+          <span class="brand-pill">✨ Zara</span>
+          <span class="brand-pill">🌸 Minicute</span>
+          <span class="brand-pill">🏷️ Primark</span>
+          <span class="brand-pill">👗 &amp; More</span>
+        </div>
+        <div class="hero-ctas fa3">
+          <button class="btn btn-pk btn-lg" onclick="goPage('shop')">Shop Now 🛍️</button>
+          
+          <button class="btn btn-ol" onclick="goPage('about')">Our Story</button>
+        </div>
+        <div class="hero-stats fa3">
+          <div class="stat-b"><div class="stat-n">8K+</div><div class="stat-l">Happy Moms</div></div>
+          <div class="stat-b"><div class="stat-n">300+</div><div class="stat-l">Styles</div></div>
+          <div class="stat-b"><div class="stat-n">4.9★</div><div class="stat-l">Rating</div></div>
+          <div class="stat-b"><div class="stat-n">2hr</div><div class="stat-l">Local Delivery</div></div>
+        </div>
+      </div>
+      <div class="hero-r">
+        <img class="hero-logo-big" src="logo.png" alt="WAA Kids Closet">
+        <div class="hft"><span>⚡</span><span style="font-size:.78rem">2-Hour Delivery<br><small style="color:var(--mu);font-weight:600">Harihar &amp; Davangere</small></span></div>
+        <div class="hft"><span>🧸</span><span style="font-size:.78rem">Babyhug · Zara<br><small style="color:var(--mu);font-weight:600">Premium Brands</small></span></div>
+        <div class="hft"><span>💳</span><span style="font-size:.78rem">COD Available<br><small style="color:var(--mu);font-weight:600">PAN India Ship</small></span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MARQUEE -->
+  <div class="mq-wrap">
+    <div class="mq-track">
+      <span class="mq-item">⚡ 2-Hour Delivery in Harihar &amp; Davangere<span class="mq-dot"></span></span>
+      <span class="mq-item">🚚 Free Delivery on Eligible Orders<span class="mq-dot"></span></span>
+      <span class="mq-item">🧸 Babyhug &amp; Zara Available<span class="mq-dot"></span></span>
+      <span class="mq-item">💳 COD Available<span class="mq-dot"></span></span>
+      <span class="mq-item">↩️ 48-Hour Easy Returns<span class="mq-dot"></span></span>
+      <span class="mq-item">📦 PAN India Shipping 3–7 Days<span class="mq-dot"></span></span>
+      <span class="mq-item">✅ 8000+ Trusted Families<span class="mq-dot"></span></span>
+      <span class="mq-item">⚡ 2-Hour Delivery in Harihar &amp; Davangere<span class="mq-dot"></span></span>
+      <span class="mq-item">🚚 Free Delivery on Eligible Orders<span class="mq-dot"></span></span>
+      <span class="mq-item">🧸 Babyhug &amp; Zara Available<span class="mq-dot"></span></span>
+      <span class="mq-item">💳 COD Available<span class="mq-dot"></span></span>
+      <span class="mq-item">↩️ 48-Hour Easy Returns<span class="mq-dot"></span></span>
+      <span class="mq-item">📦 PAN India Shipping 3–7 Days<span class="mq-dot"></span></span>
+      <span class="mq-item">✅ 8000+ Trusted Families<span class="mq-dot"></span></span>
+    </div>
+  </div>
+
+  <!-- CATEGORIES -->
+  <section>
+    <div class="si">
+      <div class="sh">
+        <div><div class="stag">Browse by Category</div><h2 class="stit">Shop for Every Little One 🌈</h2></div>
+        <button class="btn btn-ol btn-sm" onclick="goPage('shop')">View All →</button>
+      </div>
+      <div class="cat-grid">
+        <div class="cat-c" onclick="shopCat('Girls Wear')"><div class="cat-img-wrap" style="font-size:3.5rem;line-height:1;margin-bottom:.8rem">👗</div><div class="cn">Girls Wear</div><div class="ck">Dresses, Frocks & more</div></div>
+        <div class="cat-c" onclick="shopCat('Boys Wear')"><div class="cat-img-wrap" style="font-size:3.5rem;line-height:1;margin-bottom:.8rem">👕</div><div class="cn">Boys Wear</div><div class="ck">Tees, Shirts & more</div></div>
+        <div class="cat-c" onclick="shopCat('Newborn')"><div class="cat-img-wrap" style="font-size:3.5rem;line-height:1;margin-bottom:.8rem">🍼</div><div class="cn">Newborn</div><div class="ck">0–12 months</div></div>
+        <div class="cat-c" onclick="shopCat('Party Wear')"><div class="cat-img-wrap" style="font-size:3.5rem;line-height:1;margin-bottom:.8rem">🎉</div><div class="cn">Party Wear</div><div class="ck">Special occasions</div></div>
+        <div class="cat-c" onclick="shopCat('Accessories')"><div class="cat-img-wrap" style="font-size:3.5rem;line-height:1;margin-bottom:.8rem">👟</div><div class="cn">Accessories</div><div class="ck">Footwear, Hairbands & more</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURED -->
+  <section style="background:var(--pk-l)">
+    <div class="si">
+      <div class="sh">
+        <div><div class="stag">✨ Handpicked for You</div><h2 class="stit">Featured Collection</h2></div>
+        <button class="btn btn-ol btn-sm" onclick="goPage('shop')">View All →</button>
+      </div>
+      <div class="ftabs" id="hmTabs">
+        <button class="ftab act" onclick="hmFilt('all',this)">All Ages</button>
+        <button class="ftab" onclick="hmFilt('0-2',this)">0–2 Years</button>
+        <button class="ftab" onclick="hmFilt('2-5',this)">2–5 Years</button>
+        <button class="ftab" onclick="hmFilt('5-10',this)">5–10 Years</button>
+        <button class="ftab" onclick="hmFilt('10-14',this)">10–14 Years</button>
+      </div>
+      <div class="pgrid" id="featGrid"></div>
+    </div>
+  </section>
+
+  <!-- PROMO -->
+  <section>
+    <div class="si">
+      <div class="promo-box">
+        <div>
+          <div class="ptag">🎊 Limited Time Sale</div>
+          <h2 class="ptit">Grab Flat <span>40% OFF</span> on All Festive Wear!</h2>
+          <div class="cpn-box">
+            <div><div class="cpn-lbl">Use Code</div><div class="cpn-code">WAA40</div></div>
+            <button class="cpn-copy" onclick="copyCpn('WAA40')">Copy</button>
+          </div><br>
+          <button class="btn btn-yl btn-lg" onclick="goPage('shop')">Shop the Sale →</button>
+        </div>
+        <div style="text-align:center">
+          <div class="promo-pct">40<span>% OFF</span></div>
+          <div style="font-size:3.5rem;margin-top:1rem;animation:float 2s ease-in-out infinite">🎊</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BESTSELLERS -->
+  <section style="background:var(--yl-l)">
+    <div class="si">
+      <div class="sh">
+        <div><div class="stag">🔥 Top Selling</div><h2 class="stit">Bestsellers This Month</h2></div>
+        <button class="btn btn-ol btn-sm" onclick="goPage('shop')">View All →</button>
+      </div>
+      <div class="pgrid" id="bsGrid"></div>
+    </div>
+  </section>
+
+  <!-- BRANDS -->
+  <section>
+    <div class="si">
+      <div class="sh" style="justify-content:center;flex-direction:column;align-items:center;text-align:center;gap:.4rem">
+        <div class="stag">Premium Brands at Budget Prices</div>
+        <h2 class="stit">Trusted Brands We Carry 🏷️</h2>
+        <p style="color:var(--mu);font-size:.93rem;font-weight:600;margin-top:.4rem">Discover popular brands like Babyhug, Zara, and more at surprisingly low costs</p>
+      </div>
+      <div class="brands-row">
+        <div class="brand-card">🧸 Babyhug</div>
+        <div class="brand-card">✨ Zara</div>
+        <div class="brand-card">🌸 Minicute</div>
+        <div class="brand-card">🏷️ Primark</div>
+        <div class="brand-card">👗 H&amp;M Style</div>
+        <div class="brand-card">👟 &amp; Many More</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DELIVERY HIGHLIGHT -->
+  <section style="background:var(--pk-l)">
+    <div class="si">
+      <div class="sh">
+        <div><div class="stag">🚚 Super Fast Delivery</div><h2 class="stit">We Deliver Everywhere!</h2></div>
+      </div>
+      <div class="del-grid">
+        <div class="del-card del-card-local">
+          <div class="del-badge">⚡</div>
+          <div class="del-title">Harihar &amp; Davangere</div>
+          <div class="del-time">Within 2 Hours!</div>
+          <div class="del-desc">Super-fast local delivery for customers in Harihar and Davangere. Order now and receive your adorable outfits in no time!</div>
+          <div style="margin-top:1rem;display:flex;gap:.75rem;flex-wrap:wrap">
+            <a class="del-tag" href="https://maps.app.goo.gl/ECUAAxSazszhxgKX7" target="_blank">📍 View on Google Maps</a>
+          </div>
+        </div>
+        <div class="del-card del-card-pan">
+          <div class="del-badge">📦</div>
+          <div class="del-title">PAN India Delivery</div>
+          <div class="del-time" style="color:var(--bl)">3–7 Working Days</div>
+          <div class="del-desc">We ship across all of India. Free delivery on eligible orders. COD available. Track your order via WhatsApp/SMS updates.</div>
+          <div style="margin-top:1rem;display:flex;gap:.75rem;flex-wrap:wrap">
+            <span style="background:var(--bl-l);border:2px solid var(--bl);border-radius:50px;padding:.3rem .9rem;font-size:.78rem;font-weight:700;color:var(--bl)">🇮🇳 All India</span>
+            <span style="background:var(--bl-l);border:2px solid var(--bl);border-radius:50px;padding:.3rem .9rem;font-size:.78rem;font-weight:700;color:var(--bl)">💳 COD Available</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHY WAA -->
+  <section>
+    <div class="si">
+      <div class="sh" style="justify-content:center;flex-direction:column;align-items:center;text-align:center;gap:.4rem">
+        <div class="stag">Why Choose WAA?</div>
+        <h2 class="stit">Made with Love ❤️</h2>
+      </div>
+      <div class="why-grid">
+        <div class="wc"><span class="wi">🧴</span><div class="wt">Skin-Safe Fabrics</div><div class="wd">High-quality, trendy, and skin-friendly outfits. Safe for every child, from newborns to teens.</div></div>
+        <div class="wc"><span class="wi">💰</span><div class="wt">Affordable Prices</div><div class="wd">Premium branded collections at budget-friendly prices. Babyhug, Zara &amp; more at surprisingly low costs.</div></div>
+        <div class="wc"><span class="wi">⚡</span><div class="wt">Super Fast Delivery</div><div class="wd">2-hour delivery in Harihar &amp; Davangere. PAN India in 3–7 days with real-time WhatsApp updates.</div></div>
+        <div class="wc"><span class="wi">↩️</span><div class="wt">Easy Returns</div><div class="wd">48-hour return window. Hassle-free replacement for size issues, damaged, or wrong items.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WA SECTION -->
+  <section>
+    <div class="si">
+      <div class="wa-sec">
+        <div style="font-size:3rem;margin-bottom:1rem">💬</div>
+        <h2 class="wa-sec-t">Shop on <span class="gr">WhatsApp</span></h2>
+        <p class="wa-sec-s">Browse our full catalogue, place orders, and get real-time support — all on WhatsApp! Quick replies within 1 hour, Mon–Sat 9 AM – 8 PM.</p>
+        
+      </div>
+    </div>
+  </section>
+
+  <!-- REVIEWS -->
+  <section style="background:var(--pp-l)">
+    <div class="si">
+      <div class="sh"><div><div class="stag">💬 Happy Families</div><h2 class="stit">What Moms Are Saying</h2></div></div>
+      <div class="rgrid">
+        <div class="rc"><div class="rst">★★★★★</div><p class="rtx">"Really happy with the purchase! The fabric quality is very good and comfortable for kids. I'm totally satisfied 😊 The fitting was perfect and the material feels soft on my child's skin. Will definitely order again!"</p><div class="rau"><div class="rav" style="background:var(--pk)">N</div><div><div class="rnm">Naheeda Yaseen</div><div class="rme">Harihar, Karnataka</div></div></div></div>
+        <div class="rc"><div class="rst">★★★★★</div><p class="rtx">"Loved the collection at WAA Kids Closet! Great quality clothes at very affordable prices. Highly recommended 👍 It's hard to find such good designs at this price. The outfits looked exactly like the pictures."</p><div class="rau"><div class="rav" style="background:var(--bl)">I</div><div><div class="rnm">Iman Nazhat</div><div class="rme">Bangalore, Karnataka</div></div></div></div>
+        <div class="rc"><div class="rst">★★★★★</div><p class="rtx">"Trendy and stylish kidswear collection. Really liked the designs! The variety available is impressive and perfect for both daily wear and special occasions."</p><div class="rau"><div class="rav" style="background:var(--gn)">H</div><div><div class="rnm">Husna Banu</div><div class="rme">Davanagere, Karnataka</div></div></div></div>
+        <div class="rc"><div class="rst">★★★★★</div><p class="rtx">"WAA Kids Closet has an excellent collection for kids. Good quality and nice options available. The stitching and finishing are neat, and the clothes are worth the price."</p><div class="rau"><div class="rav" style="background:var(--pp)">S</div><div><div class="rnm">Shabeena Banu</div><div class="rme">Ranebennur, Karnataka</div></div></div></div>
+        <div class="rc"><div class="rst">★★★★★</div><p class="rtx">"Very good quality clothes at reasonable prices. The designs are really cute and perfect for kids. I was surprised by the quality at this price. Totally worth it!"</p><div class="rau"><div class="rav" style="background:var(--yl2)">K</div><div><div class="rnm">Kaveri</div><div class="rme">Harappanalli, Karnataka</div></div></div></div>
+        <div class="rc"><div class="rst">★★★★★</div><p class="rtx">"Beautiful collection and very affordable prices. The quality exceeded my expectations. Even with delivery to Mumbai, the service was smooth and timely. Will surely shop again!"</p><div class="rau"><div class="rav" style="background:var(--or)">D</div><div><div class="rnm">Disha</div><div class="rme">Mumbai, Maharashtra</div></div></div></div>
+        <div class="rc"><div class="rst">★★★★★</div><p class="rtx">"Loved the collection and the quick delivery service. The outfits look exactly like the pictures and the quality is great! The ordering process was smooth and hassle-free. Highly satisfied!"</p><div class="rau"><div class="rav" style="background:var(--bl)">V</div><div><div class="rnm">Vijay</div><div class="rme">Hubli, Karnataka</div></div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- NEWSLETTER -->
+  <section style="padding:3rem 2rem">
+    <div class="si">
+      <div class="nl-box">
+        <div style="font-size:2rem;margin-bottom:.8rem">🎁</div>
+        <h2 class="nl-t">Get Early Access to New Drops</h2>
+        <p class="nl-s">Join 8000+ moms who get exclusive deals, new arrivals, and special offers first.</p>
+        <form class="nl-f" onsubmit="doNL(event)">
+          <input class="nl-i" type="email" placeholder="your@email.com" required>
+          <button class="nl-b" type="submit">Subscribe →</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="fi">
+      <div class="fg">
+        <div>
+          <img class="f-logo-img" src="logo.png" alt="WAA Kids Closet Logo">
+          <p class="fdesc">Adorable, affordable, and made with love. Dressing little ones of India since 2021. Premium brands at budget-friendly prices.</p>
+          <p class="f-addr">📍 Behind S.M. Weigh Bridge, PB Road<br>Harihar, Karnataka 577601<br>📞 +91 93800 13093</p>
+          <div style="display:flex;gap:.8rem;margin-top:1.2rem;align-items:center;flex-wrap:wrap">
+            <a href="https://www.instagram.com/waa_kids_closet" target="_blank" style="color:rgba(255,255,255,.5);font-size:1.2rem;transition:color .2s" onmouseover="this.style.color='#ff6eb4'" onmouseout="this.style.color='rgba(255,255,255,.5)'">📸 Instagram</a>
+            
+          </div>
+        </div>
+        <div>
+          <div class="fh">Shop</div>
+          <ul class="fl">
+            <li><a onclick="goPage('shop')">New Arrivals</a></li>
+            <li><a onclick="goPage('shop')">Girls Wear</a></li>
+            <li><a onclick="goPage('shop')">Boys Wear</a></li>
+            <li><a onclick="goPage('shop')">Newborn</a></li>
+            <li><a onclick="goPage('shop')">Party Wear</a></li>
+            <li><a onclick="goPage('shop')">Accessories</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="fh">Company</div>
+          <ul class="fl">
+            <li><a onclick="goPage('about')">About Us</a></li>
+            <li><a onclick="goPage('contact')">Contact Us</a></li>
+            <li><a href="https://wa.me/919380013093" target="_blank">WhatsApp Us</a></li>
+            <li><a href="https://www.instagram.com/waa_kids_closet" target="_blank">Instagram</a></li>
+            <li><a href="https://maps.app.goo.gl/ECUAAxSazszhxgKX7" target="_blank">Find Us on Maps</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="fh">Help</div>
+          <ul class="fl">
+            <li><a onclick="goPage('policy')">Return Policy</a></li>
+            <li><a onclick="goPage('policy')">Delivery Policy</a></li>
+            <li><a onclick="goPage('policy')">Privacy Policy</a></li>
+            <li><a onclick="goPage('policy')">Size Guide</a></li>
+            <li><a onclick="goPage('contact')">FAQ</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="fb">
+        <p class="fcopy">© 2025 WAA Kids Closet. We-Are-Affordable. Made with 💕 in India. Harihar, Karnataka.</p>
+        <div class="fpay">
+          <span class="fpb">RAZORPAY</span><span class="fpb">UPI</span><span class="fpb">VISA</span><span class="fpb">MASTERCARD</span><span class="fpb">COD</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<!-- ═══════ SHOP ═══════ -->
+<div class="page" id="page-shop">
+  <div class="shop-hero"><h1>All Products 🛍️</h1><p style="color:var(--mu);font-weight:600">Showing <strong id="shopCnt">0</strong> products</p></div>
+  <div class="sl">
+    <aside class="sidebar">
+      <div class="sb-hd">Filters <button class="sb-clr" onclick="clrFilt()">Clear</button></div>
+      <div class="fg-b"><div class="fg-bt">Categories</div>
+        <label class="fo"><input type="checkbox" onchange="applyFilters()"> Girls Wear</label>
+        <label class="fo"><input type="checkbox" onchange="applyFilters()"> Boys Wear</label>
+        <label class="fo"><input type="checkbox" onchange="applyFilters()"> Newborn</label>
+        <label class="fo"><input type="checkbox" onchange="applyFilters()"> Party Wear</label>
+        <label class="fo"><input type="checkbox" onchange="applyFilters()"> Nightwear</label>
+        <label class="fo"><input type="checkbox" onchange="applyFilters()"> Accessories</label>
+        <label class="fo"><input type="checkbox" onchange="applyFilters()"> Sets &amp; Combos</label>
+      </div>
+      <div class="fg-b"><div class="fg-bt">Age Group</div>
+        <label class="fo"><input type="checkbox" onchange="applyFilters()"> 0–2 Years</label>
+        <label class="fo"><input type="checkbox" onchange="applyFilters()"> 2–5 Years</label>
+        <label class="fo"><input type="checkbox" onchange="applyFilters()"> 5–10 Years</label>
+        <label class="fo"><input type="checkbox" onchange="applyFilters()"> 10–14 Years</label>
+      </div>
+      <div class="fg-b"><div class="fg-bt">Size</div>
+        <div class="sc">
+          <span class="sch" onclick="this.classList.toggle('act');applyFilters()">NB</span><span class="sch" onclick="this.classList.toggle('act');applyFilters()">3M</span>
+          <span class="sch" onclick="this.classList.toggle('act');applyFilters()">6M</span><span class="sch" onclick="this.classList.toggle('act');applyFilters()">12M</span>
+          <span class="sch" onclick="this.classList.toggle('act');applyFilters()">2Y</span><span class="sch" onclick="this.classList.toggle('act');applyFilters()">3Y</span>
+          <span class="sch" onclick="this.classList.toggle('act');applyFilters()">4Y</span><span class="sch" onclick="this.classList.toggle('act');applyFilters()">5Y</span>
+          <span class="sch" onclick="this.classList.toggle('act');applyFilters()">6Y</span><span class="sch" onclick="this.classList.toggle('act');applyFilters()">8Y</span>
+          <span class="sch" onclick="this.classList.toggle('act');applyFilters()">10Y</span><span class="sch" onclick="this.classList.toggle('act');applyFilters()">12Y</span>
+        </div>
+      </div>
+      <div class="fg-b"><div class="fg-bt">Price Range (₹)</div>
+        <div class="pr-row"><input class="pr-i" type="number" placeholder="Min" value="0"><input class="pr-i" type="number" placeholder="Max" value="2000"></div>
+        <button class="btn btn-pk btn-sm btn-full" style="margin-top:.75rem;border-radius:10px" onclick="applyFilters()">Apply</button>
+      </div>
+    </aside>
+    <div>
+      <div class="shop-top">
+        <div class="ftabs" id="shopTabs">
+          <button class="ftab act" onclick="shopAge('all',this)">All</button>
+          <button class="ftab" onclick="shopAge('0-2',this)">0–2 Yrs</button>
+          <button class="ftab" onclick="shopAge('2-5',this)">2–5 Yrs</button>
+          <button class="ftab" onclick="shopAge('5-10',this)">5–10 Yrs</button>
+          <button class="ftab" onclick="shopAge('10-14',this)">10–14 Yrs</button>
+        </div>
+        <select class="sort-s" onchange="sortShop(this.value)">
+          <option value="">Featured</option>
+          <option value="pa">Price: Low to High</option>
+          <option value="pd">Price: High to Low</option>
+          <option value="new">Newest First</option>
+        </select>
+      </div>
+      <div class="pgrid" id="shopGrid"></div>
+      <div style="display:flex;justify-content:center;gap:.5rem;margin-top:2.5rem">
+        <button class="btn btn-pk btn-sm">1</button>
+        <button class="btn btn-ol btn-sm">2</button>
+        <button class="btn btn-ol btn-sm">→</button>
+      </div>
+    </div>
+  </div>
+  <div class="mf"><img class="mfl-img" src="logo.png" alt="WAA Kids"><p style="font-size:.75rem;color:rgba(255,255,255,.35);font-weight:600">© 2025 WAA Kids Closet · +91 93800 13093</p></div>
+</div>
+
+<!-- ═══════ PRODUCT DETAIL ═══════ -->
+<div class="page" id="page-product">
+  <div class="dp">
+    <div class="bc"><span onclick="goPage('home')">Home</span><span class="bc-sep">/</span><span onclick="goPage('shop')">Shop</span><span class="bc-sep">/</span><span style="color:var(--tx)" id="d-bc">Product</span></div>
+    <div class="dg">
+      <div>
+        <div class="gm" id="d-main"><span id="d-em" style="font-size:8rem">👗</span></div>
+        <div class="gths" id="d-thumbs"></div>
+      </div>
+      <div>
+        <div class="dbrand">WAA Kids Closet</div>
+        <h1 class="dname" id="d-name">Product Name</h1>
+        <div class="drat"><span class="dstars">★★★★★</span><span class="drc" id="d-rc">4.9 · 186 reviews</span></div>
+        <div class="dpr"><span class="dpo" id="d-old"></span><span class="dpc" id="d-cur">₹449</span> <span class="dps" id="d-save"></span></div>
+        <div class="dage" id="d-age">🎂 Best for Ages 2–6 Years</div>
+        <p class="ddesc" id="d-desc">Product description here.</p>
+        <div class="ds"><div class="dl">Select Size</div><div class="sopts" id="d-sizes"></div></div>
+        <div class="ds"><div class="dl">Color</div><div class="cdots" id="d-colors"><div class="cdot on" style="background:#ff8a80" onclick="selCol(this)"></div><div class="cdot" style="background:#80d8ff" onclick="selCol(this)"></div><div class="cdot" style="background:#b9f6ca" onclick="selCol(this)"></div><div class="cdot" style="background:#ffd180" onclick="selCol(this)"></div></div></div>
+        <div class="ds"><div class="dl">Quantity</div><div class="qrow"><button class="qbtn" onclick="chQty(-1)">−</button><div class="qnum" id="d-qty">1</div><button class="qbtn" onclick="chQty(1)">+</button></div></div>
+        <div class="act-row">
+          <button class="btn btn-ol btn-lg" style="flex:1" onclick="addFromDetail()">🛒 Add to Cart</button>
+          <button class="wsh" onclick="this.textContent='❤️';toast('Saved to wishlist 💕','💕')">🤍</button>
+        </div>
+        <button class="btn btn-pk btn-lg btn-full" style="margin-bottom:.6rem" onclick="addFromDetail();goPage('checkout')">⚡ Buy Now</button>
+        <a href="https://wa.me/919380013093?text=Hi! I want to order from WAA Kids Closet" target="_blank" class="btn btn-wa btn-lg btn-full" style="margin-bottom:1rem">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
+          Order on WhatsApp
+        </a>
+        <div class="dfeats">
+          <div class="dfr"><span>⚡</span> 2-Hour delivery in Harihar &amp; Davangere</div>
+          <div class="dfr"><span>🚚</span> Free shipping on eligible orders</div>
+          <div class="dfr"><span>↩️</span> 48-hour easy returns &amp; replacement</div>
+          <div class="dfr"><span>💳</span> COD available | Secure payment</div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:3.5rem"><h2 style="font-family:var(--fd);font-size:1.8rem;margin-bottom:1.5rem">You May Also Like 💕</h2>
+
+        <!-- COMBO OFFERS -->
+        <div style="background:linear-gradient(135deg,#fff0f7,#f5f3ff);border-radius:20px;padding:1.5rem;margin-bottom:1.5rem;border:2px solid #f0e8fb">
+          <div style="text-align:center;margin-bottom:1rem">
+            <div style="font-size:1.3rem">🎁 Combo Offers — Mix &amp; Match &amp; Save!</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.8rem">
+            <div style="background:#fff;border-radius:14px;padding:1.1rem;text-align:center;border:2px solid #f0e8fb;cursor:pointer" onclick="goPage('shop')">
+              <div style="font-size:2rem;margin-bottom:.3rem">👗👕</div>
+              <div style="font-weight:800;color:var(--pk);font-size:1rem">Buy Any 2</div>
+              <div style="font-size:.75rem;color:var(--mu);font-weight:600;margin:.2rem 0">Mix any 2 items</div>
+              <div style="background:var(--pk);color:#fff;border-radius:50px;padding:.25rem .8rem;font-size:.78rem;font-weight:800;display:inline-block;margin-top:.3rem">Save ₹100</div>
+            </div>
+            <div style="background:#fff;border-radius:14px;padding:1.1rem;text-align:center;border:2px dashed var(--pk);cursor:pointer" onclick="goPage('shop')">
+              <div style="font-size:2rem;margin-bottom:.3rem">👗👕👖</div>
+              <div style="font-weight:800;color:var(--pk);font-size:1rem">Buy Any 3</div>
+              <div style="font-size:.75rem;color:var(--mu);font-weight:600;margin:.2rem 0">Mix any 3 items</div>
+              <div style="background:linear-gradient(135deg,var(--pk),var(--pk2));color:#fff;border-radius:50px;padding:.25rem .8rem;font-size:.78rem;font-weight:800;display:inline-block;margin-top:.3rem">Save ₹250</div>
+            </div>
+          </div>
+          <div style="text-align:center;font-size:.75rem;color:var(--mu);font-weight:600">
+            💬 WhatsApp to place combo order: <a href="https://wa.me/919380013093?text=Hi%2C%20I%20want%20a%20Combo%20Order%20from%20WAA%20Kids%20Closet" target="_blank" style="color:var(--pk);font-weight:800">+91 93800 13093</a>
+          </div>
+        </div>
+
+        <div class="pgrid" id="relGrid"></div></div>
+  </div>
+  <div class="mf"><p style="font-size:.75rem;color:rgba(255,255,255,.35);font-weight:600">© 2025 WAA Kids Closet</p></div>
+</div>
+
+<!-- ═══════ CART ═══════ -->
+<div class="page" id="page-cart">
+  <div class="cp">
+    <h1 class="ct">🛒 Your Cart</h1>
+    <div class="cg">
+      <div>
+        <div id="cartList"></div>
+        <button class="btn btn-ol" style="margin-top:1.5rem" onclick="goPage('shop')">← Continue Shopping</button>
+      </div>
+      <div class="ob">
+        <div class="obt">Order Summary</div>
+        <div class="coup-row"><input class="ci2" type="text" placeholder="Enter coupon code" id="cpnInp"><button class="ap-btn" onclick="applyCpn()">Apply</button></div>
+        <div class="srow"><span>Subtotal</span><span id="c-sub">₹0</span></div>
+        <div class="srow"><span>Delivery</span><span style="color:var(--gn)">FREE</span></div>
+        <div class="srow"><span>Discount</span><span style="color:var(--rd)" id="c-disc">−₹0</span></div>
+        <div class="srow stot"><span>Total</span><span id="c-tot">₹0</span></div>
+        <button class="btn btn-pk btn-full btn-lg" style="margin-top:1.2rem" onclick="goPage('checkout')">Proceed to Checkout →</button>
+        <div class="tr-bs">
+          <div class="trb">🔒 SSL Secure</div>
+          <div class="trb">⚡ 2-Hr Local Delivery</div>
+          <div class="trb">↩️ 48-Hr Returns</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ CHECKOUT ═══════ -->
+<div class="page" id="page-checkout">
+  <div class="chp">
+    <h1 class="cht">Checkout 🎀</h1>
+    <div class="chg">
+      <div>
+        <h2 class="ch-st">Delivery Details</h2>
+        <div class="fr2">
+          <div class="fg2"><label class="fl2">First Name *</label><input class="fi2" type="text" placeholder="Priya"></div>
+          <div class="fg2"><label class="fl2">Last Name *</label><input class="fi2" type="text" placeholder="Sharma"></div>
+        </div>
+        <div class="fg2"><label class="fl2">Phone Number *</label><input class="fi2" type="tel" placeholder="+91 93800 13093"></div>
+        <div class="fg2"><label class="fl2">Email</label><input class="fi2" type="email" placeholder="priya@email.com"></div>
+        <div class="fg2"><label class="fl2">Flat / Street *</label><input class="fi2" type="text" placeholder="42, PB Road"></div>
+        <div class="fg2"><label class="fl2">Area / Locality *</label><input class="fi2" type="text" placeholder="Near S.M. Weigh Bridge"></div>
+        <div class="fr2">
+          <div class="fg2"><label class="fl2">City *</label><input class="fi2" type="text" placeholder="Harihar"></div>
+          <div class="fg2"><label class="fl2">PIN Code *</label><input class="fi2" type="text" placeholder="577601"></div>
+        </div>
+        <div class="fr2">
+          <div class="fg2"><label class="fl2">State *</label>
+            <select class="fi2"><option>Karnataka</option><option>Maharashtra</option><option>Tamil Nadu</option><option>Telangana</option><option>Kerala</option><option>Delhi</option><option>Andhra Pradesh</option><option>Gujarat</option></select>
+          </div>
+          <div class="fg2"><label class="fl2">Country</label><input class="fi2" value="India" readonly></div>
+        </div>
+        <h2 class="ch-st">Payment Method</h2>
+        <div class="po">
+          <div class="popt on" onclick="selPay(this)"><input type="radio" name="pay" checked><div><div class="pon">Razorpay</div><div class="pos">UPI · Cards · Net Banking · Wallets</div></div><span style="background:#5bb8ff;color:#fff;font-size:.62rem;padding:.15rem .5rem;border-radius:4px;font-weight:800;margin-left:auto">SAFE</span></div>
+          <div class="popt" onclick="selPay(this)"><input type="radio" name="pay"><div><div class="pon">Cash on Delivery</div><div class="pos">Pay when you receive the order</div></div></div>
+        </div>
+        <button class="btn btn-pk btn-full btn-lg" onclick="placeOrder()" style="font-size:1rem">🎉 Place Order &amp; Pay <span id="po-amt">₹0</span> →</button>
+        <p style="text-align:center;font-size:.72rem;color:var(--mu);margin-top:.8rem;font-weight:600">🔒 Secured by 256-bit SSL · Powered by Razorpay</p>
+      </div>
+      <div class="ob" style="position:sticky;top:82px">
+        <div class="obt">Your Order</div>
+        <div id="co-items" style="border-bottom:2px solid var(--br);padding-bottom:1.2rem;margin-bottom:1.2rem"></div>
+        <div class="srow"><span>Subtotal</span><span id="co-sub">₹0</span></div>
+        <div class="srow"><span>Shipping</span><span style="color:var(--gn)">FREE</span></div>
+        <div class="srow"><span>GST (5%)</span><span id="co-gst">₹0</span></div>
+        <div class="srow stot"><span>Total</span><span id="co-tot">₹0</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ SUCCESS ═══════ -->
+<div class="page" id="page-success">
+  <div class="sucp">
+    <div class="suci">
+      <div class="sucem">🎉</div>
+      <h1 class="suct">Order Placed!</h1>
+      <p style="color:var(--mu);font-weight:600;line-height:1.7;margin-bottom:2rem">Yay! Your adorable order is confirmed. We'll pack it with love and ship within 24 hours!</p>
+      <div class="sucb">
+        <div style="font-family:var(--fd);font-size:1.2rem;margin-bottom:1rem">Order Details</div>
+        <div class="odr"><span>Order ID</span><span style="font-size:.8rem;color:var(--mu)">#WAA-2025-<span id="oid">0000</span></span></div>
+        <div class="odr"><span>Items</span><span id="o-items">2 items</span></div>
+        <div class="odr"><span>Amount Paid</span><span style="font-weight:900" id="o-amt">₹0</span></div>
+        <div class="odr"><span>Payment</span><span style="color:var(--gn)" id="o-pay-method">✓ Confirmed</span></div>
+        <div class="odr"><span>Delivery By</span><span id="o-del">—</span></div>
+      </div>
+      <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-pk btn-lg" onclick="goPage('shop')">Continue Shopping 🛍️</button>
+        <a href="https://wa.me/919380013093?text=Hi! I just placed order. Please confirm delivery." target="_blank" class="btn btn-wa btn-lg">Track on WhatsApp</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ ABOUT ═══════ -->
+<div class="page" id="page-about">
+  <div class="conp">
+    <div class="conh"><h1 class="conh-t">Our Story 💛</h1><p style="color:var(--mu);font-size:1rem;font-weight:600;max-width:500px;margin:0 auto;line-height:1.7">WAA Kids Closet is a trusted home-based kidswear store dedicated to bringing parents the perfect blend of style, comfort, and affordability.</p></div>
+    <div class="agrid">
+      <div class="aimg"><img src="logo.png" alt="WAA Kids Logo" style="object-fit:contain;padding:1rem"></div>
+      <div>
+        <div class="stag">Founded 2021 · Harihar, Karnataka</div>
+        <h2 style="font-family:var(--fd);font-size:2rem;margin:.4rem 0 1rem;line-height:1.2">We-Are-Affordable — Premium Kids Fashion for Every Family</h2>
+        <p style="color:var(--mu);line-height:1.8;font-size:.92rem;font-weight:600;margin-bottom:1rem">WAA Kids Closet caters to children from newborns up to 14 years, ensuring every stage of childhood is dressed with care and love. We carefully handpick high-quality, trendy, and skin-friendly outfits perfect for everyday wear, outings, festive occasions, and special moments.</p>
+        <p style="color:var(--mu);line-height:1.8;font-size:.92rem;font-weight:600;margin-bottom:1rem">What truly sets us apart is our ability to offer premium branded collections — Babyhug, Zara, and more — at budget-friendly prices, making stylish fashion accessible for every family.</p>
+        <p style="color:var(--mu);line-height:1.8;font-size:.92rem;font-weight:600">We also offer a wide range of kids' accessories including footwear, hairbands, clips, cute rings, and many more essentials for your little ones.</p>
+      </div>
+    </div>
+    <div class="avals">
+      <div class="avc"><div style="font-size:2.2rem;margin-bottom:.75rem">🧴</div><div style="font-weight:800;margin-bottom:.4rem">Skin-Safe Fabrics</div><div style="font-size:.82rem;color:var(--mu);font-weight:600">High-quality, skin-friendly fabrics safe for every child from newborn to teen.</div></div>
+      <div class="avc"><div style="font-size:2.2rem;margin-bottom:.75rem">💰</div><div style="font-weight:800;margin-bottom:.4rem">Budget-Friendly</div><div style="font-size:.82rem;color:var(--mu);font-weight:600">Premium brands like Babyhug &amp; Zara at affordable prices for every family.</div></div>
+      <div class="avc"><div style="font-size:2.2rem;margin-bottom:.75rem">💕</div><div style="font-weight:800;margin-bottom:.4rem">Trusted &amp; Loved</div><div style="font-size:.82rem;color:var(--mu);font-weight:600">8000+ happy families trust WAA Kids. Our mission: make every child look adorable.</div></div>
+    </div>
+  </div>
+  <div class="mf"><p style="font-size:.75rem;color:rgba(255,255,255,.35);font-weight:600">© 2025 WAA Kids Closet</p></div>
+</div>
+
+<!-- ═══════ CONTACT ═══════ -->
+<div class="page" id="page-contact">
+  <div class="conp">
+    <div class="conh"><h1 class="conh-t">Say Hello! 👋</h1><p style="color:var(--mu);font-size:.98rem;font-weight:600;max-width:440px;margin:0 auto;line-height:1.7">We're a friendly team and we love hearing from our customers. Reach us on WhatsApp for fastest reply!</p></div>
+    <div class="cgrid">
+      <div>
+        <div class="cii"><div class="ciic">💬</div><div><div style="font-weight:800;margin-bottom:.3rem">WhatsApp (Fastest!)</div><div style="font-size:.85rem;color:var(--mu);font-weight:600"><a href="https://wa.me/919380013093" target="_blank" style="color:var(--pk)">+91 93800 13093</a><br>Mon–Sat · 9 AM – 8 PM<br>Usually replies within 1 hour</div></div></div>
+        <div class="cii"><div class="ciic">📞</div><div><div style="font-weight:800;margin-bottom:.3rem">Phone</div><div style="font-size:.85rem;color:var(--mu);font-weight:600">+91 93800 13093</div></div></div>
+        <div class="cii"><div class="ciic">📸</div><div><div style="font-weight:800;margin-bottom:.3rem">Instagram</div><div style="font-size:.85rem;color:var(--mu);font-weight:600"><a href="https://www.instagram.com/waa_kids_closet" target="_blank" style="color:var(--pk)">@waa_kids_closet</a><br>See new arrivals daily!</div></div></div>
+        <div class="cii"><div class="ciic">📍</div><div><div style="font-weight:800;margin-bottom:.3rem">Our Location</div><div style="font-size:.85rem;color:var(--mu);font-weight:600">Behind S.M. Weigh Bridge<br>PB Road, Harihar<br>Karnataka – 577601<br><a href="https://maps.app.goo.gl/ECUAAxSazszhxgKX7" target="_blank" style="color:var(--pk)">📌 View on Google Maps</a></div></div></div>
+      </div>
+      <div>
+        <div class="fg2"><label class="fl2">Your Name</label><input class="fi2" type="text" placeholder="Priya Sharma"></div>
+        <div class="fg2"><label class="fl2">Phone</label><input class="fi2" type="tel" placeholder="+91 93800 13093"></div>
+        <div class="fg2"><label class="fl2">Topic</label><select class="fi2"><option>Order Issue</option><option>Return / Exchange</option><option>Product Question</option><option>Bulk Order</option><option>Delivery Query</option><option>Other</option></select></div>
+        <div class="fg2"><label class="fl2">Message</label><textarea class="fi2" rows="5" style="resize:vertical" placeholder="Tell us how we can help..."></textarea></div>
+        <button class="btn btn-pk btn-full" onclick="toast('Message sent! We'll reply within 1 hour 💕','💕')">Send Message →</button>
+        <p style="text-align:center;margin-top:1rem;font-size:.8rem;color:var(--mu);font-weight:600">Or directly message us on <a href="https://wa.me/919380013093" target="_blank" style="color:var(--pk)">WhatsApp</a> for fastest response!</p>
+      </div>
+    </div>
+  </div>
+  <div class="mf"><p style="font-size:.75rem;color:rgba(255,255,255,.35);font-weight:600">© 2025 WAA Kids Closet · +91 93800 13093</p></div>
+</div>
+
+<!-- ═══════ POLICY ═══════ -->
+<div class="page" id="page-policy">
+  <div class="conp">
+    <div class="conh" style="text-align:left;padding:4rem 0 2rem">
+      <h1 style="font-family:var(--fd);font-size:3rem">Policies &amp; Info 📋</h1>
+      <p style="font-size:.78rem;color:var(--mu);font-weight:700">Last updated: April 2025</p>
+    </div>
+    <div class="pols"><h2 class="polh">🚚 Delivery Policy</h2>
+      <p class="polp">We deliver across India (PAN India shipping available). Express delivery available in Harihar &amp; Davangere.</p>
+      <br><p class="polp"><strong style="color:var(--tx)">⚡ Harihar &amp; Davangere:</strong> Within 2 hours (Quick Delivery)<br><strong style="color:var(--tx)">📦 Other cities:</strong> Typically 3–7 working days</p>
+      <br><p class="polp"><strong style="color:var(--tx)">Shipping Charges:</strong> Free delivery on eligible orders. Standard shipping applicable below threshold.<br><strong style="color:var(--tx)">Payment:</strong> COD available + Online UPI payments.<br><strong style="color:var(--tx)">Processing:</strong> Orders processed within 24 hours. Updates via WhatsApp/SMS.</p>
+    </div>
+    <div class="pols"><h2 class="polh">🔁 Return &amp; Replacement Policy</h2>
+      <p class="polp">Request must be raised within <strong style="color:var(--tx)">48 hours of delivery</strong>. Item must be unused, unwashed, in original condition with tags intact and original packaging.</p>
+      <br><p class="polp"><strong style="color:var(--tx)">Returns applicable for:</strong> Size issues · Damaged or defective products · Wrong item received<br><strong style="color:var(--tx)">Non-returnable:</strong> Accessories (hairbands, clips, rings — for hygiene reasons) · Items purchased during sale/clearance (unless damaged).</p>
+      <br><p class="polp"><strong style="color:var(--tx)">Return Process:</strong> Share order details via WhatsApp +91 93800 13093 with images (if damaged). Our team will verify and arrange return pickup. Replacement/refund initiated after quality check.</p>
+    </div>
+    <div class="pols"><h2 class="polh">💸 Refund Policy</h2>
+      <p class="polp">Refunds (if applicable) processed within 3–5 working days. Amount credited via original payment method or store credit.</p>
+    </div>
+    <div class="pols"><h2 class="polh">🔒 Privacy Policy</h2>
+      <p class="polp">We collect your name, contact details, and address solely to fulfill your orders. We never sell or share your data with third parties. Payments are processed securely by Razorpay — we never store card details.</p>
+    </div>
+    <div class="pols"><h2 class="polh">📏 Sizing Information</h2>
+      <p class="polp">All sizes are age-based (2Y, 3Y, 4Y etc.). If your child is between sizes, we recommend sizing up for comfort. All clothing is pre-washed with minimal shrinkage expected. Refer to the size guide on each product page.</p>
+    </div>
+    <div style="background:var(--pk-l);border:2px solid var(--pk);border-radius:var(--rr);padding:2rem;text-align:center">
+      <div style="font-size:2rem;margin-bottom:.75rem">❓ Have Questions?</div>
+      <h3 style="font-family:var(--fd);font-size:1.4rem;margin-bottom:.5rem">Contact us via WhatsApp for fastest support</h3>
+      <a href="https://wa.me/919380013093?text=Hi! I have a question about WAA Kids Closet" target="_blank" class="btn btn-wa btn-lg" style="margin-top:.5rem">Chat on WhatsApp +91 93800 13093</a>
+    </div>
+  </div>
+  <div class="mf"><p style="font-size:.75rem;color:rgba(255,255,255,.35);font-weight:600">© 2025 WAA Kids Closet</p></div>
+</div>
+
+<!-- ═══════ ADMIN LOGIN ═══════ -->
+<div class="page" id="page-admin-login">
+  <div class="adm-login-pg">
+    <div class="adm-login-box">
+      <div style="text-align:center;margin-bottom:1.5rem">
+        <img class="al-logo-img" src="logo.png" alt="WAA Kids Logo">
+        <div class="al-t">WAA <span>Kids Admin</span></div>
+        <span class="al-s">Admin Panel · Secure Login</span>
+      </div>
+      <label class="al-lbl">Email Address</label>
+      <input class="al-inp" type="email" id="adm-email" placeholder="admin@waakidscloset.in">
+      <label class="al-lbl">Password</label>
+      <input class="al-inp" type="password" id="adm-pwd" placeholder="••••••••">
+      <button class="al-btn" id="adm-login-btn" onclick="adminLogin()">Login to Admin Panel →</button>
+      <div class="al-err" id="adm-err">Wrong email or password</div>
+      <p class="al-ft">🔒 Protected · <a href="#">Forgot password?</a> · Configure Firebase to enable Auth</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ ADMIN PANEL — FULL-WIDTH FIXED ═══════════════ -->
+<div class="page" id="page-admin">
+  <div class="adm-wrap">
+
+    <!-- FULL-WIDTH TOP NAV (NO SIDEBAR = NO SQUISH BUG) -->
+    <div class="adm-tb">
+      <div class="adm-tb-logo">
+        <img class="adm-tb-logo-img" src="logo.png" alt="WAA">
+        <div><div style="font-family:var(--fd);font-size:1.1rem;color:var(--at)">WAA <span style="color:var(--aa)">Kids</span></div><div class="adm-tb-logo-sub">Admin Panel</div></div>
+      </div>
+      <div class="adm-tabs" id="admTabBar">
+        <button class="adm-tab on" data-sec="dashboard" onclick="admTab('dashboard',this)"><span class="tco">◈</span><span class="tlbl">Dashboard</span></button>
+        <button class="adm-tab" data-sec="products" onclick="admTab('products',this)"><span class="tco">👗</span><span class="tlbl">Products</span></button>
+        <button class="adm-tab" data-sec="add-product" onclick="admTab('add-product',this)"><span class="tco">➕</span><span class="tlbl">Add Product</span></button>
+        <button class="adm-tab" data-sec="categories" onclick="admTab('categories',this)"><span class="tco">🏷️</span><span class="tlbl">Categories</span></button>
+        <button class="adm-tab" data-sec="orders" onclick="admTab('orders',this)"><span class="tco">📦</span><span class="tlbl">Orders</span><span class="tbdg">4</span></button>
+        <button class="adm-tab" data-sec="customers" onclick="admTab('customers',this)"><span class="tco">👤</span><span class="tlbl">Customers</span></button>
+      </div>
+      <div class="adm-tb-right">
+        
+        <button class="adm-ghost" onclick="goPage('home')">🏪 View Store</button>
+        <button class="adm-ghost" onclick="adminLogout()">🚪 Logout</button>
+        <div class="adm-uarea"><div class="adm-av" id="adm-av">WK</div><span class="adm-un" id="adm-uname">Waa Admin</span></div>
+      </div>
+    </div>
+
+    <!-- ADMIN BODY — FULL WIDTH, NO SQUISH -->
+    <div class="adm-body">
+
+      <!-- DASHBOARD -->
+      <div class="asec on" id="as-dashboard">
+        <div class="adm-bc">WAA Kids Closet / <span>Dashboard</span></div>
+        <!-- Firebase setup reminder — shown only when Firebase is NOT configured -->
+        <div id="fb-setup-reminder" style="display:none">
+          <div style="background:rgba(255,152,0,.08);border:2px solid rgba(255,152,0,.3);border-radius:16px;padding:1.5rem;margin-bottom:1.4rem">
+            <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.2rem;flex-wrap:wrap">
+              <span style="font-size:1.6rem">🔥</span>
+              <div style="flex:1">
+                <div style="font-weight:800;color:#ffa030;font-size:.95rem">Connect Firebase — Real-time sync to all devices</div>
+                <div style="font-size:.78rem;color:#7c6fa0;font-weight:600;margin-top:.2rem">Free tier · No credit card · 5 min setup</div>
+              </div>
+              <button onclick="showFbSetupGuide()" style="background:rgba(255,152,0,.2);color:#ffa030;border:1.5px solid rgba(255,152,0,.4);padding:.45rem 1rem;border-radius:50px;font-weight:800;font-size:.78rem;cursor:pointer">📋 Setup Guide</button>
+            </div>
+
+            <!-- Firebase config input -->
+            <div style="background:rgba(0,0,0,.2);border-radius:12px;padding:1rem;margin-bottom:.8rem">
+              <div style="font-size:.72rem;font-weight:800;color:#7c6fa0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.6rem">Paste your Firebase Config below</div>
+              <textarea id="fb-config-inp" rows="8" placeholder='{
+  apiKey: "AIzaSy...",
+  authDomain: "your-app.firebaseapp.com",
+  projectId: "your-app",
+  storageBucket: "your-app.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abc123"
+}' style="width:100%;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.1);border-radius:8px;color:#ede9ff;font-size:.75rem;font-family:monospace;padding:.7rem;outline:none;resize:vertical"></textarea>
+            </div>
+            <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
+              <button onclick="applyFirebaseConfig()" style="background:linear-gradient(135deg,#ffa030,#ff6000);color:#fff;border:none;padding:.6rem 1.4rem;border-radius:50px;font-weight:800;font-size:.82rem;cursor:pointer">🔥 Connect Firebase →</button>
+              <div id="fb-connect-msg" style="font-size:.78rem;font-weight:700;color:#4ecb71;display:none">✅ Firebase connected! Real-time sync active.</div>
+            </div>
+
+            <!-- Step by step guide -->
+            <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,.07)">
+              <div style="display:flex;flex-direction:column;gap:.5rem">
+                <div style="display:flex;gap:.75rem;align-items:flex-start">
+                  <div style="background:#ffa030;color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:800;flex-shrink:0;margin-top:.1rem">1</div>
+                  <div style="font-size:.76rem;color:#7c6fa0;font-weight:600">Go to <a href="https://console.firebase.google.com" target="_blank" style="color:#ffa030">console.firebase.google.com</a> → Create project → name it <strong style="color:#ede9ff">waa-kids-closet</strong></div>
+                </div>
+                <div style="display:flex;gap:.75rem;align-items:flex-start">
+                  <div style="background:#ffa030;color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:800;flex-shrink:0;margin-top:.1rem">2</div>
+                  <div style="font-size:.76rem;color:#7c6fa0;font-weight:600"><strong style="color:#ede9ff">Firestore Database</strong> → Create database → Start in test mode</div>
+                </div>
+                <div style="display:flex;gap:.75rem;align-items:flex-start">
+                  <div style="background:#ffa030;color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:800;flex-shrink:0;margin-top:.1rem">3</div>
+                  <div style="font-size:.76rem;color:#7c6fa0;font-weight:600"><strong style="color:#ede9ff">Storage</strong> → Get started → Start in test mode</div>
+                </div>
+                <div style="display:flex;gap:.75rem;align-items:flex-start">
+                  <div style="background:#ffa030;color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:800;flex-shrink:0;margin-top:.1rem">4</div>
+                  <div style="font-size:.76rem;color:#7c6fa0;font-weight:600"><strong style="color:#ede9ff">Authentication</strong> → Get started → Email/Password → Enable → Add your admin email + password</div>
+                </div>
+                <div style="display:flex;gap:.75rem;align-items:flex-start">
+                  <div style="background:#ffa030;color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:800;flex-shrink:0;margin-top:.1rem">5</div>
+                  <div style="font-size:.76rem;color:#7c6fa0;font-weight:600">Project Settings (⚙️) → Your Apps → Web → Register App → Copy the <strong style="color:#ffa030">firebaseConfig</strong> object → Paste above</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="astats">
+          <div class="asc"><div><div class="asc-lbl">Total Orders</div><div class="asc-val" id="d-ordCnt">0</div><div class="asc-ch" id="d-ordNote">loading…</div></div><div class="asc-ico" style="background:rgba(252,211,77,.12)">📦</div></div>
+          <div class="asc"><div><div class="asc-lbl">Revenue (MTD)</div><div class="asc-val">₹4.2L</div><div class="asc-ch">↑ 22% vs last month</div></div><div class="asc-ico" style="background:rgba(78,203,113,.12)">💰</div></div>
+          <div class="asc"><div><div class="asc-lbl">Active Products</div><div class="asc-val" id="d-pCnt">—</div><div class="asc-ch" id="d-pNote">loading…</div></div><div class="asc-ico" style="background:rgba(91,184,255,.12)">👗</div></div>
+          <div class="asc"><div><div class="asc-lbl">Customers</div><div class="asc-val">8,421</div><div class="asc-ch">↑ 287 new this week</div></div><div class="asc-ico" style="background:rgba(192,132,252,.12)">👨‍👩‍👧</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:1.2rem">
+          <div class="acard"><div class="acard-hd"><span class="acard-t">Revenue — Last 7 Days</span><span class="acard-sub">₹94,320 this week</span></div><div class="acard-bd"><div class="ch-bars"><div class="ch-bar" style="height:55%"><span class="ch-lbl">Mon</span></div><div class="ch-bar" style="height:72%"><span class="ch-lbl">Tue</span></div><div class="ch-bar" style="height:40%"><span class="ch-lbl">Wed</span></div><div class="ch-bar" style="height:90%"><span class="ch-lbl">Thu</span></div><div class="ch-bar" style="height:68%"><span class="ch-lbl">Fri</span></div><div class="ch-bar" style="height:100%;background:var(--aa)"><span class="ch-lbl">Sat</span></div><div class="ch-bar" style="height:52%"><span class="ch-lbl">Sun</span></div></div></div></div>
+          <div class="acard"><div class="acard-hd"><span class="acard-t">Order Status</span></div><div class="acard-bd" style="display:flex;flex-direction:column;gap:.85rem">
+            <div><div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--at);font-weight:700;margin-bottom:.3rem"><span>Pending</span><span>18</span></div><div style="height:5px;background:rgba(255,255,255,.07);border-radius:3px"><div style="height:100%;width:15%;background:#fcd34d;border-radius:3px"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--at);font-weight:700;margin-bottom:.3rem"><span>Paid</span><span>36</span></div><div style="height:5px;background:rgba(255,255,255,.07);border-radius:3px"><div style="height:100%;width:30%;background:#5bb8ff;border-radius:3px"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--at);font-weight:700;margin-bottom:.3rem"><span>Shipped</span><span>78</span></div><div style="height:5px;background:rgba(255,255,255,.07);border-radius:3px"><div style="height:100%;width:65%;background:var(--aa);border-radius:3px"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--at);font-weight:700;margin-bottom:.3rem"><span>Delivered</span><span>120</span></div><div style="height:5px;background:rgba(255,255,255,.07);border-radius:3px"><div style="height:100%;width:100%;background:#4ecb71;border-radius:3px"></div></div></div>
+          </div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.2rem">
+          <div class="acard"><div class="acard-hd"><span class="acard-t">Recent Orders</span><button class="abt-o" onclick="admTab('orders',null)">View All →</button></div><div style="overflow-x:auto"><table class="at"><thead><tr><th>Order</th><th>Customer</th><th>Amount</th><th>Status</th></tr></thead><tbody id="d-orders-t"></tbody></table></div></div>
+          <div class="acard"><div class="acard-hd"><span class="acard-t">Top Products</span></div><div class="acard-bd" id="d-top-p"></div></div>
+        </div>
+      </div>
+
+      <!-- PRODUCTS LIST -->
+      <div class="asec" id="as-products">
+        <div class="adm-bc">WAA Kids Closet / <span>Products</span></div>
+        <div class="atbar">
+          <input class="as-inp" type="text" placeholder="🔍 Search products…" id="ps-q" oninput="renderAdmProd()">
+          <select class="as-sel" id="ps-cat" onchange="renderAdmProd()"><option value="">All Categories</option><option>Girls Wear</option><option>Boys Wear</option><option>Newborn</option><option>Party Wear</option><option>Nightwear</option><option>Accessories</option><option>Sets &amp; Combos</option></select>
+          <select class="as-sel" id="ps-st" onchange="renderAdmProd()"><option value="">All Status</option><option>Active</option><option>Draft</option><option>Out of Stock</option></select>
+          <button class="abt" style="margin-left:auto" onclick="admTab('add-product',null)">+ Add Product</button>
+        </div>
+        <div class="acard" style="overflow-x:auto">
+          <table class="at"><thead><tr><th>Product</th><th>Category</th><th>Age</th><th>Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead><tbody id="prod-t"></tbody></table>
+        </div>
+      </div>
+
+      <!-- ADD / EDIT PRODUCT -->
+      <div class="asec" id="as-add-product">
+        <div class="adm-bc">WAA Kids Closet / <span id="ap-bc">Add Product</span></div>
+        <div class="prod-grid">
+          <!-- LEFT: Main Form -->
+          <div>
+            <div class="acard">
+              <div class="acard-hd"><span class="acard-t" id="ap-title">Add New Product</span><span class="acard-sub">💾 Saves to Firebase + localStorage</span></div>
+              <div class="acard-bd">
+                <input type="hidden" id="edit-id">
+                <label class="afl">Product Name *</label>
+                <input class="afin" type="text" id="p-name" placeholder="e.g. Floral Smock Dress">
+                <label class="afl">Description</label>
+                <textarea class="afin afta" id="p-desc" placeholder="Describe fabric, features, brand, suitable age…"></textarea>
+                <div class="afgrid">
+                  <div><label class="afl">Category *</label><select class="afin" id="p-cat"><option value="">Select Category</option><option>Girls Wear</option><option>Boys Wear</option><option>Newborn</option><option>Party Wear</option><option>Nightwear</option><option>Accessories</option><option>Sets &amp; Combos</option></select></div>
+                  <div><label class="afl">Brand (optional)</label><input class="afin" type="text" id="p-brand" placeholder="e.g. Babyhug, Zara"></div>
+                </div>
+                <div class="afgrid">
+                  <div><label class="afl">Selling Price (₹) *</label><input class="afin" type="number" id="p-price" placeholder="449"></div>
+                  <div><label class="afl">Original / MRP (₹)</label><input class="afin" type="number" id="p-mrp" placeholder="699"></div>
+                </div>
+                <div class="afgrid">
+                  <div><label class="afl">Age Group</label><select class="afin" id="p-age"><option value="0-2">0–2 Years</option><option value="2-5">2–5 Years</option><option value="5-10">5–10 Years</option><option value="10-14">10–14 Years</option><option value="all">All Ages</option></select></div>
+                  <div><label class="afl">Stock Quantity *</label><input class="afin" type="number" id="p-stock" placeholder="50"></div>
+                </div>
+                <div class="afgrid">
+                  <div><label class="afl">Available Sizes</label><input class="afin" type="text" id="p-sizes" placeholder="2Y, 3Y, 4Y, 5Y, 6Y"></div>
+                  <div><label class="afl">Emoji (if no image)</label><input class="afin" type="text" id="p-emoji" placeholder="👗" maxlength="4"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- IMAGE UPLOAD CARD -->
+            <div class="acard">
+              <div class="acard-hd"><span class="acard-t">Product Images 📸</span><span class="acard-sub" id="img-cloud-hint">Upload from your device</span></div>
+              <div class="acard-bd">
+                <div class="upzone">
+                  <input type="file" id="img-inp" multiple accept="image/*" onchange="handleImgSel(event)">
+                  <div class="up-ico">📸</div>
+                  <div class="up-t">Click to upload photos from your system</div>
+                  <div class="up-s">PNG, JPG, WebP up to 5MB each · Max 8 images</div>
+                </div>
+                <div class="img-prev" id="img-prev"></div>
+                <div id="up-status" style="font-size:.74rem;color:var(--aa);font-weight:700;margin-top:.5rem"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT: Status + SEO -->
+          <div style="display:flex;flex-direction:column;gap:1.2rem">
+            <div class="acard">
+              <div class="acard-hd"><span class="acard-t">Status &amp; Visibility</span></div>
+              <div class="acard-bd">
+                <label class="afl">Product Status</label>
+                <select class="afin" id="p-status"><option>Active</option><option>Draft</option><option>Out of Stock</option></select>
+                <label class="afl">Featured on Homepage?</label>
+                <select class="afin" id="p-featured"><option value="no">No</option><option value="yes">Yes</option></select>
+                <label class="afl">Badge Label</label>
+                <select class="afin" id="p-badge"><option value="">None</option><option value="new">New</option><option value="sale">Sale</option><option value="hot">Hot</option><option value="bestseller">Bestseller</option></select>
+              </div>
+            </div>
+            <div class="acard">
+              <div class="acard-hd"><span class="acard-t">SEO</span></div>
+              <div class="acard-bd">
+                <label class="afl">Meta Title</label>
+                <input class="afin" type="text" id="p-mt" placeholder="Kids Dress for Girls 2–6 Years…">
+                <label class="afl">Meta Description</label>
+                <textarea class="afin" style="min-height:70px" id="p-md" placeholder="Beautiful floral smocked dress in breathable cotton…"></textarea>
+              </div>
+            </div>
+            <div style="display:flex;gap:.75rem">
+              <button class="btn btn-pk" style="flex:1;border-radius:10px" onclick="saveProd()"><span id="save-txt">💾 Save to Firebase</span></button>
+              <button class="btn btn-ol" style="border-radius:10px" onclick="saveDraft()">Draft</button>
+            </div>
+            <button class="abt-o" id="cancel-btn" style="display:none" onclick="cancelEdit()">✕ Cancel Edit</button>
+            <div id="save-msg" style="font-size:.78rem;font-weight:700;text-align:center;padding:.5rem;border-radius:8px;display:none"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CATEGORIES -->
+      <div class="asec" id="as-categories">
+        <div class="adm-bc">WAA Kids Closet / <span>Categories</span></div>
+        <div style="display:grid;grid-template-columns:300px 1fr;gap:1.25rem">
+          <div class="acard"><div class="acard-hd"><span class="acard-t">Add Category</span></div><div class="acard-bd">
+            <label class="afl">Category Name *</label><input class="afin" type="text" id="c-name" placeholder="e.g. Girls Wear">
+            <label class="afl">URL Slug</label><input class="afin" type="text" id="c-slug" placeholder="girls-wear">
+            <label class="afl">Emoji Icon</label><input class="afin" type="text" id="c-emoji" placeholder="👗" maxlength="4">
+            <label class="afl">Description</label><textarea class="afin afta" id="c-desc" style="min-height:70px" placeholder="Category description…"></textarea>
+            <button class="btn btn-pk btn-full" style="margin-top:1rem;border-radius:10px" onclick="saveCat()">Add Category</button>
+          </div></div>
+          <div class="acard" style="overflow-x:auto">
+            <div class="acard-hd"><span class="acard-t">All Categories</span></div>
+            <table class="at"><thead><tr><th>Icon</th><th>Name</th><th>Slug</th><th>Products</th><th>Actions</th></tr></thead><tbody id="cat-t"></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ORDERS -->
+      <div class="asec" id="as-orders">
+        <div class="adm-bc">WAA Kids Closet / <span>Orders</span></div>
+        <div class="atbar">
+          <input class="as-inp" placeholder="🔍 Search orders…">
+          <select class="as-sel"><option>All Status</option><option>Pending</option><option>Paid</option><option>Shipped</option><option>Delivered</option></select>
+          <button class="abt-o" style="margin-left:auto">📥 Export CSV</button>
+        </div>
+        <div class="acard" style="overflow-x:auto">
+          <table class="at"><thead><tr><th>Order ID</th><th>Customer</th><th>Phone</th><th>Items</th><th>Amount</th><th>Date</th><th>Status</th><th>Update</th><th>WhatsApp</th></tr></thead>
+          <tbody id="real-orders-t"></tbody></table>
+        </div>
+      </div>
+
+      <!-- CUSTOMERS -->
+      <div class="asec" id="as-customers">
+        <div class="adm-bc">WAA Kids Closet / <span>Customers</span></div>
+        <div class="atbar"><input class="as-inp" placeholder="🔍 Search customers…"><button class="abt-o" style="margin-left:auto">📥 Export CSV</button></div>
+        <div class="acard" style="overflow-x:auto">
+          <table class="at"><thead><tr><th>Name</th><th>Phone</th><th>City</th><th>Orders</th><th>Total Spent</th><th>Last Order</th><th>Action</th></tr></thead>
+          <tbody>
+            <tr><td style="font-weight:800">Preethi M.</td><td style="font-size:.76rem">+91 93800 13093</td><td>Mumbai</td><td>8</td><td style="font-weight:800;color:var(--aa)">₹4,192</td><td style="color:var(--am);font-size:.75rem">Today</td><td><button class="abt-o">View</button></td></tr>
+            <tr><td style="font-weight:800">Sindhu R.</td><td style="font-size:.76rem">+91 98765 43210</td><td>Harihar</td><td>12</td><td style="font-weight:800;color:var(--aa)">₹5,388</td><td style="color:var(--am);font-size:.75rem">Today</td><td><button class="abt-o">View</button></td></tr>
+            <tr><td style="font-weight:800">Anjali K.</td><td style="font-size:.76rem">+91 87654 32109</td><td>Davangere</td><td>18</td><td style="font-weight:800;color:var(--aa)">₹8,082</td><td style="color:var(--am);font-size:.75rem">Yesterday</td><td><button class="abt-o">View</button></td></tr>
+            <tr><td style="font-weight:800">Meera S.</td><td style="font-size:.76rem">+91 76543 21098</td><td>Hyderabad</td><td>5</td><td style="font-weight:800;color:var(--aa)">₹2,245</td><td style="color:var(--am);font-size:.75rem">Yesterday</td><td><button class="abt-o">View</button></td></tr>
+          </tbody></table>
+        </div>
+      </div>
+
+    </div><!-- /adm-body -->
+  </div><!-- /adm-wrap -->
+</div><!-- /page-admin -->
+
+<script>
+// ══════════════════════════════════════════════
+// WAA KIDS CLOSET — COMPLETE JS (clean rewrite)
+// ══════════════════════════════════════════════
+
+// ── DATA KEYS ──
+var PK    = 'waa_v5_prods';
+var CK    = 'waa_v5_cats';
+var CARTK = 'waa_v5_cart';
+var ORDK  = 'waa_v5_orders';
+
+// ── DEMO PRODUCTS ──
+var DEMO = [
+  {id:'p1',name:'Floral Smock Dress',desc:'Gorgeous floral smocked dress in 100% breathable cotton. Perfect for playtime or celebrations.',cat:'Girls Wear',brand:'',price:449,mrp:699,age:'2-5',stock:42,emoji:'👗',badge:'bestseller',status:'Active',sizes:'2Y,3Y,4Y,5Y,6Y',images:[],featured:'yes'},
+  {id:'p2',name:'Dino Print Tee Set',desc:'Super-soft 100% cotton tee with vibrant dino print. Machine washable, built for adventures.',cat:'Boys Wear',brand:'Babyhug',price:349,mrp:549,age:'2-5',stock:67,emoji:'🦕',badge:'new',status:'Active',sizes:'2Y,3Y,4Y,5Y',images:[],featured:'yes'},
+  {id:'p3',name:'Bear Romper Set',desc:'Adorable bear-print romper for newborns. 100% organic cotton, ultra-gentle on baby skin.',cat:'Newborn',brand:'Babyhug',price:399,mrp:599,age:'0-2',stock:30,emoji:'🧸',badge:'hot',status:'Active',sizes:'NB,3M,6M,12M',images:[],featured:'yes'},
+  {id:'p4',name:'Party Frock Pink',desc:'Gorgeous party frock with tulle layers. Perfect for birthdays and celebrations.',cat:'Party Wear',brand:'',price:599,mrp:899,age:'2-5',stock:18,emoji:'🎀',badge:'sale',status:'Active',sizes:'2Y,3Y,4Y,5Y,6Y',images:[],featured:'yes'},
+  {id:'p5',name:'Striped Polo Tee',desc:'Classic striped polo tee for everyday wear. Comfortable, durable, and stylish.',cat:'Boys Wear',brand:'',price:299,mrp:449,age:'5-10',stock:55,emoji:'🎽',badge:'bestseller',status:'Active',sizes:'4Y,5Y,6Y,8Y,10Y',images:[],featured:'no'},
+  {id:'p6',name:'Twirl Dress Rainbow',desc:'Colourful rainbow twirl dress that spins beautifully.',cat:'Girls Wear',brand:'Zara',price:499,mrp:749,age:'2-5',stock:22,emoji:'🌈',badge:'new',status:'Active',sizes:'2Y,3Y,4Y,5Y,6Y',images:[],featured:'no'},
+  {id:'p7',name:'Denim Dungaree Set',desc:'Trendy denim dungaree with snap buttons. Durable and stylish for active kids.',cat:'Boys Wear',brand:'',price:549,mrp:799,age:'5-10',stock:15,emoji:'👖',badge:'',status:'Active',sizes:'4Y,5Y,6Y,8Y',images:[],featured:'no'},
+  {id:'p8',name:'Bunny Nightsuit',desc:'Super soft nightsuit with cute bunny print. Makes bedtime the best time.',cat:'Nightwear',brand:'Babyhug',price:349,mrp:499,age:'0-2',stock:40,emoji:'🐰',badge:'new',status:'Active',sizes:'NB,3M,6M,12M,2Y',images:[],featured:'no'}
+];
+
+var DCATS = [
+  {id:'c1',name:'Girls Wear',slug:'girls-wear',emoji:'👗',desc:'Adorable dresses for girls'},
+  {id:'c2',name:'Boys Wear',slug:'boys-wear',emoji:'👕',desc:'Cool tees for boys'},
+  {id:'c3',name:'Newborn',slug:'newborn',emoji:'🍼',desc:'Gentle clothes for newborns'},
+  {id:'c4',name:'Party Wear',slug:'party-wear',emoji:'🎉',desc:'Special occasion outfits'},
+  {id:'c5',name:'Nightwear',slug:'nightwear',emoji:'😴',desc:'Comfortable sleepwear'},
+  {id:'c6',name:'Accessories',slug:'accessories',emoji:'👟',desc:'Footwear, hairbands & more'}
+];
+
+// ── STORAGE HELPERS ──
+function gP() {
+  try {
+    var d = localStorage.getItem(PK);
+    if (!d) { sP(DEMO.slice()); return DEMO.slice(); }
+    var parsed = JSON.parse(d);
+    if (!Array.isArray(parsed) || parsed.length === 0) { sP(DEMO.slice()); return DEMO.slice(); }
+    // Ensure DEMO products are always present (merge missing ones)
+    var ids = parsed.map(function(p){return p.id;});
+    var missing = DEMO.filter(function(d){ return !ids.includes(d.id); });
+    if (missing.length > 0) {
+      var merged = parsed.concat(missing);
+      sP(merged);
+      return merged;
+    }
+    return parsed;
+  } catch(e) { return DEMO.slice(); }
+}
+function sP(p) {
+  try {
+    if (!Array.isArray(p)) return;
+    localStorage.setItem(PK, JSON.stringify(p));
+  } catch(e) { toast('Storage full — reduce image sizes','⚠️'); }
+}
+function gC() { try { var d=localStorage.getItem(CK); return d ? JSON.parse(d) : DCATS.slice(); } catch(e) { return DCATS.slice(); } }
+function sC(c) { localStorage.setItem(CK, JSON.stringify(c)); }
+function gCart() { try { var d=localStorage.getItem(CARTK); return d ? JSON.parse(d) : []; } catch(e) { return []; } }
+function sCart(c) { localStorage.setItem(CARTK, JSON.stringify(c)); }
+function gOrders() { try { var d=localStorage.getItem(ORDK); return d ? JSON.parse(d) : []; } catch(e) { return []; } }
+function sOrders(o) { try { localStorage.setItem(ORDK, JSON.stringify(o)); } catch(e) {} }
+
+// ── SMART INIT: migrate old data + restore missing demo products ──
+(function() {
+  // Migrate from old keys (v3/v4) to v5
+  var oldKeys = ['waa_v4_prods','waa_v3_prods','waa_prods'];
+  var existing = null;
+  oldKeys.forEach(function(k) {
+    if (!existing && localStorage.getItem(k)) {
+      try { existing = JSON.parse(localStorage.getItem(k)); } catch(e) {}
+    }
+  });
+
+  var saved = localStorage.getItem(PK);
+  if (!saved) {
+    // First time: use migrated data or DEMO
+    sP(existing && existing.length > 0 ? existing : DEMO.slice());
+  } else {
+    // Already have v5 data — validate it has products
+    try {
+      var parsed = JSON.parse(saved);
+      if (!parsed || parsed.length === 0) sP(DEMO.slice()); // reset if empty
+    } catch(e) { sP(DEMO.slice()); }
+  }
+  if (!localStorage.getItem(CK)) sC(DCATS.slice());
+  // Clear old keys after migration
+  oldKeys.forEach(function(k) { localStorage.removeItem(k); });
+})();
+
+// ── STATE ──
+var curQty = 1, curProd = null, shopAgeF = 'all', shopSortF = '', discAmt = 0;
+var pendImgs = [], editImgs = [];
+
+// ══ TOAST ══
+function toast(msg, ico) {
+  ico = ico || '✨';
+  document.getElementById('tMsg').textContent = msg;
+  document.getElementById('tIco').textContent = ico;
+  var t = document.getElementById('toast');
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 3200);
+}
+
+// ══ PAGE ROUTING ══
+function goPage(p) {
+  document.querySelectorAll('.page').forEach(function(el) { el.classList.remove('active'); });
+  var t = document.getElementById('page-' + p);
+  if (t) {
+    t.classList.add('active');
+    // Scroll to top but account for fixed navbar (70px) + info bar (~40px)
+    window.scrollTo({top: 0, behavior: 'instant'});
+  }
+  var nav = document.getElementById('siteNav');
+  var waf = document.querySelector('.waf');
+  var isAdm = (p === 'admin' || p === 'admin-login');
+  if (nav) nav.style.display = isAdm ? 'none' : 'flex';
+  if (waf) waf.style.display = isAdm ? 'none' : 'flex';
+  if (p === 'home')     renderHome();
+  if (p === 'shop')     renderShop();
+  if (p === 'cart')     renderCart();
+  if (p === 'checkout') renderCO();
+  if (p === 'admin')    {
+    // Restore last active tab on admin enter
+    var lastTab = sessionStorage.getItem('waa_adm_tab') || 'dashboard';
+    renderDashStats(); renderAdmProd(); renderCatT(); renderOrders();
+    admTab(lastTab, null);
+  }
+  // Remember current page so refresh restores it
+  if (p !== 'checkout' && p !== 'success') {
+    sessionStorage.setItem('waa_cur_page', p);
+  }
+  updBadge();
+}
+
+function togMob() { document.getElementById('mobNav').classList.toggle('open'); }
+function clsMob() { document.getElementById('mobNav').classList.remove('open'); }
+window.addEventListener('scroll', function() {
+  var nav = document.getElementById('siteNav');
+  if (nav) nav.classList.toggle('scrolled', window.scrollY > 20);
+});
+
+// ══ CARD BUILDER ══
+function catBg(cat) {
+  var map = {'Girls Wear':'#fff0f7','Boys Wear':'#edf6ff','Newborn':'#edfff3','Party Wear':'#fce7f3','Nightwear':'#f5f3ff','Accessories':'#fff4ed','Sets & Combos':'#fffbea'};
+  return map[cat] || '#f5f3ff';
+}
+
+function makeCard(p) {
+  var off = p.mrp > p.price ? Math.round((1-p.price/p.mrp)*100) : 0;
+  var badge = p.badge ? '<span class="pb pb-' + p.badge + '">' + p.badge + '</span>' : '';
+  var imgEl = (p.images && p.images.length)
+    ? '<img src="' + p.images[0] + '" alt="product" style="width:100%;height:100%;object-fit:cover">'
+    : '<span class="pi-em">' + (p.emoji||'') + '</span>';
+  var priceHtml = p.mrp > p.price
+    ? '<span class="p-cur">Rs.' + p.price.toLocaleString() + '</span><span class="p-old">Rs.' + p.mrp.toLocaleString() + '</span><span class="p-off">' + off + '% off</span>'
+    : '<span class="p-cur">Rs.' + p.price.toLocaleString() + '</span>';
+  var brandTxt = p.brand ? ' - ' + p.brand : '';
+  return '<div class="pc" data-pid="' + p.id + '" onclick="openProd(this.dataset.pid)">'
+    + '<div class="pi" style="background:' + catBg(p.cat) + '">'
+    + badge + imgEl
+    + '<button class="pq" data-pid="' + p.id + '" onclick="event.stopPropagation();addCart(this.dataset.pid,1)">Cart</button>'
+    + '</div>'
+    + '<div class="pb2"><div class="pc-cat">' + p.cat + brandTxt + '</div>'
+    + '<div class="pc-nm">' + p.name + '</div>'
+    + '<div class="pc-pr">' + priceHtml + '</div></div></div>';
+}
+
+
+// ══ HOME ══
+function renderHome() {
+  var prods = gP().filter(function(p) { return p.status === 'Active'; });
+  var fg = document.getElementById('featGrid');
+  var bg = document.getElementById('bsGrid');
+  var feat = prods.filter(function(p) { return p.featured === 'yes'; });
+  var display = feat.length ? feat : prods;
+  if (fg) fg.innerHTML = display.slice(0,4).map(makeCard).join('') || '<p style="grid-column:1/-1;text-align:center;padding:2rem;color:#9188a8;font-weight:700">Add products from Admin Panel!</p>';
+  if (bg) bg.innerHTML = prods.slice(0,4).map(makeCard).join('');
+}
+
+function hmFilt(age, btn) {
+  document.querySelectorAll('#hmTabs .ftab').forEach(function(t) { t.classList.remove('act'); });
+  btn.classList.add('act');
+  var prods = gP().filter(function(p) { return p.status === 'Active'; });
+  var f = age === 'all' ? prods : prods.filter(function(p) { return p.age === age; });
+  var fg = document.getElementById('featGrid');
+  if (fg) fg.innerHTML = f.slice(0,4).map(makeCard).join('') || '<p style="grid-column:1/-1;text-align:center;padding:2rem;color:#9188a8;font-weight:700">No products in this age group</p>';
+}
+
+// ══ SHOP ══
+function renderShop() {
+  var prods = gP().filter(function(p) { return p.status === 'Active'; });
+  var f = prods.slice();
+  if (shopAgeF !== 'all') f = f.filter(function(p) { return p.age === shopAgeF; });
+  if (shopSortF === 'pa') f.sort(function(a,b) { return a.price - b.price; });
+  if (shopSortF === 'pd') f.sort(function(a,b) { return b.price - a.price; });
+  if (shopSortF === 'new') f.reverse();
+  var g = document.getElementById('shopGrid');
+  var cnt = document.getElementById('shopCnt');
+  if (cnt) cnt.textContent = f.length;
+  if (g) g.innerHTML = f.length ? f.map(makeCard).join('') : '<p style="grid-column:1/-1;text-align:center;padding:3rem;color:#9188a8;font-weight:700">No products found — add products from Admin panel</p>';
+}
+
+// ── SIDEBAR FILTER ENGINE ──
+function applyFilters() {
+  var prods = gP().filter(function(p){ return p.status === 'Active'; });
+
+  // Get all checked category boxes by looping all .fo inputs
+  var allBoxes = document.querySelectorAll('#page-shop .fo input[type=checkbox]');
+  var selCats = [], selAges = [];
+  var ageMap = {'0–2 Years':'0-2','2–5 Years':'2-5','5–10 Years':'5-10','10–14 Years':'10-14'};
+  var ageLabels = Object.keys(ageMap);
+
+  allBoxes.forEach(function(inp) {
+    if (!inp.checked) return;
+    var lbl = inp.parentElement.textContent.trim();
+    if (ageLabels.indexOf(lbl) >= 0) {
+      selAges.push(ageMap[lbl]);
+    } else {
+      selCats.push(lbl);
+    }
+  });
+
+  if (selCats.length) prods = prods.filter(function(p){ return selCats.indexOf(p.cat) >= 0; });
+  if (selAges.length) prods = prods.filter(function(p){ return selAges.indexOf(p.age) >= 0; });
+
+  // Selected sizes
+  var selSizes = Array.from(document.querySelectorAll('.sch.act')).map(function(s){ return s.textContent.trim(); });
+  if (selSizes.length) prods = prods.filter(function(p){
+    var pSizes = (p.sizes||'').split(',').map(function(s){ return s.trim(); });
+    return selSizes.some(function(sz){ return pSizes.indexOf(sz) >= 0; });
+  });
+
+  // Price range filter
+  var prMin = document.querySelector('#page-shop .pr-i[placeholder="Min"]');
+  var prMax = document.querySelector('#page-shop .pr-i[placeholder="Max"]');
+  if (prMin && prMax) {
+    var minP = parseInt(prMin.value) || 0;
+    var maxP = parseInt(prMax.value) || 99999;
+    if (minP > 0 || maxP < 99999) {
+      prods = prods.filter(function(p){ return p.price >= minP && p.price <= maxP; });
+    }
+  }
+
+  // Sort
+  if (shopSortF === 'pa') prods.sort(function(a,b){ return a.price - b.price; });
+  if (shopSortF === 'pd') prods.sort(function(a,b){ return b.price - a.price; });
+  if (shopSortF === 'new') prods.reverse();
+
+  var g = document.getElementById('shopGrid');
+  var cnt = document.getElementById('shopCnt');
+  if (cnt) cnt.textContent = prods.length;
+  if (g) g.innerHTML = prods.length
+    ? prods.map(makeCard).join('')
+    : '<p style="grid-column:1/-1;text-align:center;padding:3rem;color:#9188a8;font-weight:700">No products match your filters</p>';
+}
+
+function shopCat(cat) {
+  goPage('shop');
+  // Select the category filter checkbox
+  setTimeout(function() {
+    document.querySelectorAll('.fo input').forEach(function(inp) {
+      var lbl = inp.parentElement.textContent.trim();
+      inp.checked = (lbl === cat);
+    });
+    renderShop();
+  }, 100);
+}
+
+function shopAge(age, btn) {
+  document.querySelectorAll('#shopTabs .ftab').forEach(function(t) { t.classList.remove('act'); });
+  btn.classList.add('act');
+  shopAgeF = age;
+  renderShop();
+}
+
+function sortShop(v) { shopSortF = v; renderShop(); }
+
+function clrFilt() {
+  document.querySelectorAll('#page-shop .fo input').forEach(function(i) { i.checked = false; });
+  document.querySelectorAll('.sch').forEach(function(s) { s.classList.remove('act'); });
+  shopAgeF = 'all';
+  document.querySelectorAll('#shopTabs .ftab').forEach(function(t) { t.classList.remove('act'); });
+  var first = document.querySelector('#shopTabs .ftab');
+  if (first) first.classList.add('act');
+  renderShop();
+  toast('Filters cleared', '🗑️');
+}
+
+// ══ PRODUCT DETAIL ══
+function openProd(id, silent) {
+  var p = gP().find(function(x) { return x.id === id; });
+  if (!p) return;
+  curProd = p; curQty = 1; window._curProdId = id;
+
+  document.getElementById('d-bc').textContent = p.name;
+  document.getElementById('d-name').textContent = p.name;
+  document.getElementById('d-desc').textContent = p.desc || '';
+  document.getElementById('d-cur').textContent = '₹' + p.price.toLocaleString();
+  document.getElementById('d-old').textContent = p.mrp > p.price ? '₹' + p.mrp.toLocaleString() : '';
+  document.getElementById('d-save').textContent = p.mrp > p.price ? 'Save ₹' + (p.mrp - p.price).toLocaleString() + ' (' + Math.round((1-p.price/p.mrp)*100) + '%)' : '';
+  var ageMap = {'0-2':'0–2','2-5':'2–6','5-10':'5–10','10-14':'10–14','all':'All'};
+  document.getElementById('d-age').textContent = '🎂 Best for Ages ' + (ageMap[p.age] || p.age) + ' Years';
+  document.getElementById('d-qty').textContent = 1;
+
+  var gm = document.getElementById('d-main');
+  var thumbs = document.getElementById('d-thumbs');
+  if (p.images && p.images.length) {
+    gm.innerHTML = '<img src="' + p.images[0] + '" style="width:100%;height:100%;object-fit:cover">';
+    thumbs.innerHTML = p.images.map(function(u, i) {
+    return '<div class="gth ' + (i===0?'on':'') + '" data-url="' + u + '" onclick="switchImg(this,this.dataset.url)"><img src="' + u + '"></div>';
+  }).join('');
+  } else {
+    gm.innerHTML = '<span style="font-size:8rem">' + (p.emoji||'👗') + '</span>';
+    thumbs.innerHTML = '';
+  }
+
+  var szs = (p.sizes || '2Y,3Y,4Y').split(',').map(function(s) { return s.trim(); });
+  document.getElementById('d-sizes').innerHTML = szs.map(function(s,i) {
+    return '<div class="sopt' + (i===1?' on':'') + '" onclick="selSz(this)">' + s + '</div>';
+  }).join('');
+
+  var rel = gP().filter(function(x) { return x.id !== id && x.cat === p.cat && x.status === 'Active'; }).slice(0,4);
+  var rg = document.getElementById('relGrid');
+  if (rg) rg.innerHTML = rel.map(makeCard).join('');
+
+  if (!silent) goPage('product');
+}
+
+function switchImg(el, url) {
+  document.querySelectorAll('.gth').forEach(function(t) { t.classList.remove('on'); });
+  el.classList.add('on');
+  document.getElementById('d-main').innerHTML = '<img src="' + url + '" style="width:100%;height:100%;object-fit:cover">';
+}
+function selSz(el) { el.parentElement.querySelectorAll('.sopt').forEach(function(s) { s.classList.remove('on'); }); el.classList.add('on'); }
+function selCol(el) { el.parentElement.querySelectorAll('.cdot').forEach(function(c) { c.classList.remove('on'); }); el.classList.add('on'); }
+function chQty(d) { curQty = Math.max(1, curQty+d); document.getElementById('d-qty').textContent = curQty; }
+function addFromDetail() { if (curProd) addCart(curProd.id, curQty); }
+
+// ══ CART ══
+function addCart(id, qty) {
+  var p = gP().find(function(x) { return x.id === id; });
+  if (!p) return;
+  var cart = gCart();
+  var ex = cart.find(function(i) { return i.id === id; });
+  if (ex) { ex.qty += qty; } else { cart.push({id:id, qty:qty, name:p.name, price:p.price, emoji:p.emoji||'👗', img:(p.images&&p.images[0])||'', cat:p.cat, brand:p.brand||''}); }
+  sCart(cart); updBadge(); toast(p.name + ' added! 🛍️', '🎉');
+}
+
+function updBadge() {
+  var n = gCart().reduce(function(s,i) { return s+i.qty; }, 0);
+  document.getElementById('cBadge').textContent = n;
+}
+
+function renderCart() {
+  var cart = gCart();
+  var el = document.getElementById('cartList');
+  if (!el) return;
+  el.innerHTML = '';
+
+  if (!cart.length) {
+    var empty = document.createElement('div');
+    empty.style.cssText = 'text-align:center;padding:3rem;color:#9188a8';
+    empty.innerHTML = '<div style="font-size:4rem;margin-bottom:1rem">🛒</div><p style="font-weight:700">Your cart is empty</p>';
+    var shopBtn = document.createElement('button');
+    shopBtn.className = 'btn btn-pk';
+    shopBtn.style.marginTop = '1rem';
+    shopBtn.textContent = 'Start Shopping';
+    shopBtn.addEventListener('click', function() { goPage('shop'); });
+    empty.appendChild(shopBtn);
+    el.appendChild(empty);
+    setTots(0);
+    return;
+  }
+
+  cart.forEach(function(item) {
+    var row = document.createElement('div');
+    row.className = 'ci';
+
+    var imgDiv = document.createElement('div');
+    imgDiv.className = 'ci-img';
+    if (item.img) {
+      var img = document.createElement('img');
+      img.src = item.img;
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover';
+      imgDiv.appendChild(img);
+    } else {
+      imgDiv.textContent = item.emoji || '👗';
+    }
+    row.appendChild(imgDiv);
+
+    var mid = document.createElement('div');
+    mid.innerHTML = '<div class="ci-nm">' + item.name + '</div>'
+      + '<div class="ci-me">' + item.cat + (item.brand ? ' · ' + item.brand : '') + '</div>';
+
+    var qrow = document.createElement('div');
+    qrow.className = 'ciqc';
+    var minusBtn = document.createElement('button');
+    minusBtn.className = 'cqb'; minusBtn.textContent = '−';
+    minusBtn.dataset.id = item.id; minusBtn.dataset.d = '-1';
+    minusBtn.addEventListener('click', function() { updCQ(this.dataset.id, -1); });
+    var qNum = document.createElement('div');
+    qNum.className = 'cqn'; qNum.textContent = item.qty;
+    var plusBtn = document.createElement('button');
+    plusBtn.className = 'cqb'; plusBtn.textContent = '+';
+    plusBtn.dataset.id = item.id;
+    plusBtn.addEventListener('click', function() { updCQ(this.dataset.id, 1); });
+    qrow.appendChild(minusBtn); qrow.appendChild(qNum); qrow.appendChild(plusBtn);
+    mid.appendChild(qrow);
+    row.appendChild(mid);
+
+    var right = document.createElement('div');
+    var price = document.createElement('div');
+    price.className = 'ci-pr';
+    price.textContent = '₹' + (item.price * item.qty).toLocaleString();
+    var rmBtn = document.createElement('button');
+    rmBtn.className = 'ci-rm'; rmBtn.textContent = 'Remove';
+    rmBtn.dataset.id = item.id;
+    rmBtn.addEventListener('click', function() { rmItem(this.dataset.id); });
+    right.appendChild(price); right.appendChild(rmBtn);
+    row.appendChild(right);
+
+    el.appendChild(row);
+  });
+
+  var sub = cart.reduce(function(s, i) { return s + i.price * i.qty; }, 0);
+  setTots(sub);
+}
+
+function setTots(sub) {
+  var tot = Math.max(0, sub - discAmt);
+  var cs = document.getElementById('c-sub'); if (cs) cs.textContent = '₹' + sub.toLocaleString();
+  var cd = document.getElementById('c-disc'); if (cd) cd.textContent = '−₹' + discAmt.toLocaleString();
+  var ct = document.getElementById('c-tot'); if (ct) ct.textContent = '₹' + tot.toLocaleString();
+}
+function updCQ(id, d) { var cart=gCart(), i=cart.find(function(x){return x.id===id;}); if(!i)return; i.qty=Math.max(1,i.qty+d); sCart(cart); renderCart(); updBadge(); }
+function rmItem(id) { sCart(gCart().filter(function(i){return i.id!==id;})); renderCart(); updBadge(); toast('Removed','🗑️'); }
+function applyCpn() {
+  var code = document.getElementById('cpnInp').value.toUpperCase().trim();
+  var sub = gCart().reduce(function(s,i){return s+i.price*i.qty;},0);
+  if (code === 'WAA40') { discAmt = Math.round(sub*0.4); toast('WAA40 applied! 40% off 🎉','🎊'); }
+  else if (code === 'WELCOME10') { discAmt = Math.round(sub*0.1); toast('10% off applied!','💕'); }
+  else { discAmt = 0; toast('Invalid coupon code','❌'); }
+  setTots(sub);
+}
+
+// ══ CHECKOUT ══
+function renderCO() {
+  var cart = gCart();
+  var sub = cart.reduce(function(s,i){return s+i.price*i.qty;},0);
+  var gst = Math.round(sub*0.05);
+  var tot = sub + gst;
+  var ci = document.getElementById('co-items');
+  if (ci) {
+    ci.innerHTML = cart.slice(0,3).map(function(i) {
+      var img = i.img ? '<img src="'+i.img+'" style="width:100%;height:100%;object-fit:cover">' : i.emoji;
+      return '<div style="display:flex;gap:.8rem;align-items:center;margin-bottom:.8rem">'
+        + '<div style="width:50px;height:55px;background:#fff0f7;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0;overflow:hidden">' + img + '</div>'
+        + '<div><div style="font-size:.85rem;font-weight:800">' + i.name + '</div>'
+        + '<div style="font-size:.73rem;color:#9188a8;font-weight:600">' + i.cat + ' × ' + i.qty + '</div>'
+        + '<div style="font-size:.85rem;font-weight:900;margin-top:.2rem">₹' + (i.price*i.qty).toLocaleString() + '</div></div></div>';
+    }).join('');
+  }
+  var e = function(id){return document.getElementById(id);};
+  if(e('co-sub')) e('co-sub').textContent = '₹'+sub.toLocaleString();
+  if(e('co-gst')) e('co-gst').textContent = '₹'+gst.toLocaleString();
+  if(e('co-tot')) e('co-tot').textContent = '₹'+tot.toLocaleString();
+  if(e('po-amt')) e('po-amt').textContent = '₹'+tot.toLocaleString();
+}
+function selPay(el) { document.querySelectorAll('.popt').forEach(function(p){p.classList.remove('on');}); el.classList.add('on'); el.querySelector('input').checked=true; }
+
+// ══ ORDERS STORAGE ══
+function saveOrder(orderData) {
+  var orders = gOrders();
+  orders.unshift(orderData);
+  sOrders(orders.slice(0,200));
+  // Save to Firebase (all devices see new orders instantly)
+  fbSaveOrder(orderData);
+}
+
+// ══ PAYMENT ══
+function placeOrder() {
+  var cart = gCart();
+  if (!cart.length) { toast('Your cart is empty!','❌'); return; }
+  var sub = cart.reduce(function(s,i){return s+i.price*i.qty;},0);
+  var gst = Math.round(sub*0.05);
+  var tot = sub + gst;
+  var payOpt = document.querySelector('.popt.on .pon');
+  var payMethod = payOpt ? payOpt.textContent.trim() : 'Razorpay';
+  if (payMethod === 'Cash on Delivery') {
+    doConfirmOrder(tot, cart, 'Cash on Delivery', sub, gst);
+  } else {
+    openRazorpay(tot, cart, sub, gst);
+  }
+}
+
+function openRazorpay(tot, cart, sub, gst) {
+  if (typeof Razorpay !== 'undefined') {
+    launchRazorpay(tot, cart, sub, gst);
+  } else {
+    var s = document.createElement('script');
+    s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    s.onload = function() { launchRazorpay(tot, cart, sub, gst); };
+    s.onerror = function() { showPaymentModal(tot, cart, sub, gst); };
+    document.head.appendChild(s);
+  }
+}
+
+function launchRazorpay(tot, cart, sub, gst) {
+  var inputs = document.querySelectorAll('#page-checkout input[type=text]');
+  var fn = (inputs[0] && inputs[0].value) || 'Customer';
+  var ph = (document.querySelectorAll('#page-checkout input[type=tel]')[0] && document.querySelectorAll('#page-checkout input[type=tel]')[0].value) || '9380013093';
+  var opts = {
+    key: 'rzp_test_WAA000000000',
+    amount: tot * 100,
+    currency: 'INR',
+    name: 'WAA Kids Closet',
+    description: 'Kids Clothing Order',
+    prefill: {name: fn, contact: ph},
+    theme: {color: '#ff4fa0'},
+    handler: function(resp) { doConfirmOrder(tot, cart, 'UPI/Razorpay (' + resp.razorpay_payment_id + ')', sub, gst); },
+    modal: {ondismiss: function() { toast('Payment cancelled. Try again.','❌'); }}
+  };
+  try { var rp = new Razorpay(opts); rp.open(); }
+  catch(e) { showPaymentModal(tot, cart, sub, gst); }
+}
+
+function showPaymentModal(tot, cart, sub, gst) {
+  window._payData = {tot:tot, cart:cart, sub:sub, gst:gst};
+  var old = document.getElementById('pay-modal'); if (old) old.remove();
+
+  var mo = document.createElement('div');
+  mo.id = 'pay-modal';
+  mo.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9998;display:flex;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(6px)';
+
+  var wrap = document.createElement('div');
+  wrap.style.cssText = 'background:#fff;border-radius:20px;padding:2rem;width:100%;max-width:400px;box-shadow:0 24px 64px rgba(0,0,0,.3)';
+
+  // Header
+  var hdr = document.createElement('div');
+  hdr.style.cssText = 'text-align:center;margin-bottom:1.5rem';
+  hdr.innerHTML = '<div style="font-size:2.5rem;margin-bottom:.5rem">💳</div>'
+    + '<div style="font-size:1.5rem;font-weight:800;color:#2d2347">Pay ₹' + tot.toLocaleString() + '</div>'
+    + '<div style="font-size:.8rem;color:#9188a8;font-weight:600;margin-top:.25rem">WAA Kids Closet · Secure Payment</div>';
+  wrap.appendChild(hdr);
+
+  // UPI box
+  var upiBox = document.createElement('div');
+  upiBox.style.cssText = 'background:#fff0f7;border-radius:14px;padding:1.1rem;margin-bottom:1rem';
+  var upiLabel = document.createElement('div');
+  upiLabel.style.cssText = 'font-size:.7rem;font-weight:800;color:#9188a8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.6rem';
+  upiLabel.textContent = 'Pay via UPI';
+  upiBox.appendChild(upiLabel);
+  var upiRow = document.createElement('div');
+  upiRow.style.cssText = 'display:flex;align-items:center;gap:.6rem;background:#fff;border-radius:10px;padding:.75rem 1rem;border:2px solid #f0e8fb';
+  upiRow.innerHTML = '<span style="font-size:1.3rem">📱</span>';
+  var upiInp = document.createElement('input');
+  upiInp.id = 'upi-id-inp';
+  upiInp.type = 'text';
+  upiInp.placeholder = '9380013093@paytm or @gpay';
+  upiInp.style.cssText = 'border:none;outline:none;font-size:.85rem;font-weight:700;width:100%;color:#2d2347';
+  upiRow.appendChild(upiInp);
+  upiBox.appendChild(upiRow);
+
+  var btnRow = document.createElement('div');
+  btnRow.style.cssText = 'margin-top:.7rem;display:flex;gap:.4rem;flex-wrap:wrap';
+  ['Paytm','GPay','PhonePe','BHIM'].forEach(function(label) {
+    var sp = document.createElement('span');
+    sp.textContent = label;
+    sp.style.cssText = 'background:#fff;border:1.5px solid #f0e8fb;padding:.25rem .7rem;border-radius:50px;font-size:.72rem;font-weight:700;cursor:pointer';
+    sp.addEventListener('click', function() { upiInp.value = '9380013093@' + label.toLowerCase(); upiInp.focus(); });
+    btnRow.appendChild(sp);
+  });
+  upiBox.appendChild(btnRow);
+  wrap.appendChild(upiBox);
+
+  // OR divider
+  var div = document.createElement('div');
+  div.style.cssText = 'text-align:center;color:#9188a8;font-size:.76rem;font-weight:600;margin-bottom:.8rem';
+  div.textContent = '— or choose —';
+  wrap.appendChild(div);
+
+  // Card + Net Banking
+  var grid = document.createElement('div');
+  grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.8rem';
+  [['💳 Card','Card'],['🏦 Net Banking','Net Banking']].forEach(function(pair) {
+    var btn = document.createElement('button');
+    btn.textContent = pair[0];
+    btn.style.cssText = 'border:2px solid #f0e8fb;background:#fff;border-radius:12px;padding:.85rem;cursor:pointer;font-weight:700;font-size:.82rem';
+    btn.addEventListener('mouseenter', function() { this.style.borderColor='#ff4fa0'; });
+    btn.addEventListener('mouseleave', function() { this.style.borderColor='#f0e8fb'; });
+    btn.addEventListener('click', function() { doSimPay(pair[1]); });
+    grid.appendChild(btn);
+  });
+  wrap.appendChild(grid);
+
+  // Pay UPI button
+  var payBtn = document.createElement('button');
+  payBtn.textContent = 'Pay ₹' + tot.toLocaleString() + ' via UPI →';
+  payBtn.style.cssText = 'width:100%;background:linear-gradient(135deg,#ff4fa0,#e8358c);color:#fff;border:none;border-radius:12px;padding:.95rem;font-size:.9rem;font-weight:800;cursor:pointer;margin-bottom:.6rem;display:block';
+  payBtn.addEventListener('click', function() { doPayUPI(upiInp); });
+  wrap.appendChild(payBtn);
+
+  // Cancel
+  var cancelBtn = document.createElement('button');
+  cancelBtn.textContent = '✕ Cancel';
+  cancelBtn.style.cssText = 'width:100%;background:none;border:2px solid #f0e8fb;border-radius:12px;padding:.7rem;font-size:.84rem;font-weight:700;cursor:pointer;color:#9188a8;display:block';
+  cancelBtn.addEventListener('click', closePayModal);
+  wrap.appendChild(cancelBtn);
+
+  mo.appendChild(wrap);
+  mo.addEventListener('click', function(e) { if (e.target === mo) closePayModal(); });
+  document.body.appendChild(mo);
+}
+
+function closePayModal() { var m = document.getElementById('pay-modal'); if (m) m.remove(); }
+
+function doPayUPI(inp) {
+  var upiId = (inp || document.getElementById('upi-id-inp') || {value:''}).value.trim();
+  if (!upiId || !upiId.includes('@')) { toast('Enter a valid UPI ID (e.g. 9380013093@paytm)','❌'); return; }
+  closePayModal();
+  toast('Processing payment...','⏳');
+  var d = window._payData || {};
+  setTimeout(function() { doConfirmOrder(d.tot, d.cart||gCart(), 'UPI ('+upiId+')', d.sub||0, d.gst||0); }, 1400);
+}
+
+function doSimPay(method) {
+  closePayModal();
+  toast('Processing ' + method + '...','⏳');
+  var d = window._payData || {};
+  setTimeout(function() { doConfirmOrder(d.tot, d.cart||gCart(), method, d.sub||0, d.gst||0); }, 1400);
+}
+
+function doConfirmOrder(tot, cart, payMethod, sub, gst) {
+  var ordId = 'WAA-' + Date.now().toString().slice(-6);
+  var inputs = document.querySelectorAll('#page-checkout input[type=text]');
+  var tels   = document.querySelectorAll('#page-checkout input[type=tel]');
+  var fn   = (inputs[0] && inputs[0].value.trim()) || '';
+  var ln   = (inputs[1] && inputs[1].value.trim()) || '';
+  var ph   = (tels[0]   && tels[0].value.trim())   || 'N/A';
+  var city = (inputs[4] && inputs[4].value.trim())  || 'N/A';
+  var name = (fn + ' ' + ln).trim() || 'Customer';
+  var now  = new Date();
+  var orderData = {
+    id: ordId, orderId: '#'+ordId,
+    customer: name, phone: ph, city: city,
+    items: cart.length,
+    itemList: cart.map(function(i){return {name:i.name,qty:i.qty,price:i.price};}),
+    sub: sub, gst: gst, amount: tot,
+    payMethod: payMethod, status: 'Paid',
+    date: now.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}),
+    dateISO: now.toISOString(),
+    time: now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})
+  };
+  saveOrder(orderData);
+  var del = new Date(); del.setDate(del.getDate()+5);
+  var e = function(id){return document.getElementById(id);};
+  if(e('oid'))     e('oid').textContent     = ordId;
+  if(e('o-items')) e('o-items').textContent = cart.length + ' item' + (cart.length!==1?'s':'');
+  if(e('o-amt'))   e('o-amt').textContent   = '₹' + tot.toLocaleString();
+  if(e('o-del'))   e('o-del').textContent   = del.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+  if(e('o-pay-method')) e('o-pay-method').textContent = '✓ ' + payMethod;
+  sCart([]); updBadge(); goPage('success');
+  toast('Order placed! 🎉','🎉');
+}
+
+// ══ IMAGE HANDLING ══
+function handleImgSel(ev) {
+  var files = Array.from(ev.target.files);
+  var prevEl = document.getElementById('img-prev');
+  var st = document.getElementById('up-status');
+  files.forEach(function(f) {
+    if (!f.type.startsWith('image/')) { toast('Only image files: PNG, JPG, WebP','❌'); return; }
+    if (f.size > 10*1024*1024) { toast('Max 10MB per image','❌'); return; }
+    var idx = pendImgs.length;
+    pendImgs.push(f);
+    var url = URL.createObjectURL(f);
+    var div = document.createElement('div'); div.className = 'ipi';
+    var img = document.createElement('img'); img.src = url; img.style.cssText = 'width:100%;height:100%;object-fit:cover';
+    var del = document.createElement('button'); del.className = 'ipd'; del.textContent = '×';
+    (function(i, u) { del.addEventListener('click', function() { rmPendImg(i, this, u); }); })(idx, url);
+    div.appendChild(img); div.appendChild(del);
+    prevEl.appendChild(div);
+  });
+  ev.target.value = '';
+  if (st && pendImgs.length) st.textContent = '📸 ' + pendImgs.length + ' image' + (pendImgs.length>1?'s':'') + ' ready — will compress on save';
+}
+
+function rmPendImg(i, btn, url) {
+  pendImgs.splice(i, 1);
+  btn.parentElement.remove();
+  if (url) URL.revokeObjectURL(url);
+  var st = document.getElementById('up-status');
+  if (st) st.textContent = pendImgs.length ? '📸 ' + pendImgs.length + ' image' + (pendImgs.length>1?'s':'') + ' ready' : '';
+}
+
+function clrImgPrev() {
+  pendImgs = []; editImgs = [];
+  var p = document.getElementById('img-prev'); if (p) p.innerHTML = '';
+  var i = document.getElementById('img-inp'); if (i) i.value = '';
+  var s = document.getElementById('up-status'); if (s) s.textContent = '';
+}
+
+// ══ IMAGE COMPRESSION ══
+function compressImg(file, maxPx, quality) {
+  maxPx = maxPx || 800; quality = quality || 0.75;
+  return new Promise(function(resolve) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onload = function() {
+        var canvas = document.createElement('canvas');
+        var w = img.width, h = img.height;
+        if (w > maxPx || h > maxPx) {
+          if (w > h) { h = Math.round(h*maxPx/w); w = maxPx; }
+          else { w = Math.round(w*maxPx/h); h = maxPx; }
+        }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = function() { resolve(null); };
+      img.src = e.target.result;
+    };
+    reader.onerror = function() { resolve(null); };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ══ FIREBASE UPLOAD ══
+// ══ FIREBASE HELPERS ══
+
+// Upload image to Firebase Storage → returns download URL
+function fbUploadImg(file, prodId) {
+  if (!window._fbReady || !window._fbST) return Promise.resolve(null);
+  try {
+    var ref = window._fbST.ref('products/' + prodId + '/' + Date.now() + '_' + file.name);
+    return ref.put(file).then(function() {
+      return ref.getDownloadURL();
+    }).catch(function(e) { console.warn('Storage upload:', e); return null; });
+  } catch(e) { return Promise.resolve(null); }
+}
+
+// Save product to Firestore
+function fbSaveProd(data) {
+  if (!window._fbReady || !window._fbDB) return Promise.resolve(null);
+  try {
+    return window._fbDB.collection('products').doc(data.id)
+      .set(data, {merge: true})
+      .then(function() { return data.id; })
+      .catch(function(e) { console.warn('Firestore save:', e); return null; });
+  } catch(e) { return Promise.resolve(null); }
+}
+
+// Delete product from Firestore
+function fbDelProd(id) {
+  if (!window._fbReady || !window._fbDB) return Promise.resolve();
+  return window._fbDB.collection('products').doc(id).delete().catch(function(){});
+}
+
+// Save order to Firestore
+function fbSaveOrder(data) {
+  if (!window._fbReady || !window._fbDB) return Promise.resolve();
+  // Ensure dateISO exists for orderBy to work
+  if (!data.dateISO) data.dateISO = new Date().toISOString();
+  return window._fbDB.collection('orders').doc(data.id)
+    .set(data, {merge: true})
+    .then(function(){ console.log('✅ Order saved to Firestore:', data.id); })
+    .catch(function(e){ console.warn('Order save failed:', e); });
+}
+
+// Update order status in Firestore
+function fbUpdateOrderStatus(id, status) {
+  if (!window._fbReady || !window._fbDB) return Promise.resolve();
+  return window._fbDB.collection('orders').doc(id)
+    .update({status: status}).catch(function(){});
+}
+
+// Save category to Firestore
+function fbSaveCat(data) {
+  if (!window._fbReady || !window._fbDB) return Promise.resolve();
+  return window._fbDB.collection('categories').doc(data.id)
+    .set(data, {merge: true}).catch(function(){});
+}
+
+// Delete category from Firestore
+function fbDelCat(id) {
+  if (!window._fbReady || !window._fbDB) return Promise.resolve();
+  return window._fbDB.collection('categories').doc(id).delete().catch(function(){});
+}
+
+// JSONBin fallback cloudPush (used when Firebase not configured)
+function cloudPush() {
+  if (window._fbReady) return Promise.resolve(true); // Firebase handles it
+  var s = window._SYNC;
+  if (!s || !s.ready) return Promise.resolve(false);
+  var prodsForCloud = gP().map(function(p) {
+    var imgs = (p.images||[]).filter(function(img){ return img && !img.startsWith('data:'); });
+    return Object.assign({}, p, {images: imgs});
+  });
+  var payload = JSON.stringify({products: prodsForCloud, categories: gC(), updatedAt: new Date().toISOString()});
+  return fetch('https://api.jsonbin.io/v3/b/' + s.binId, {
+    method: 'PUT',
+    headers: {'Content-Type':'application/json','X-Master-Key': s.apiKey},
+    body: payload
+  }).then(function(r){ return r.ok; }).catch(function(){ return false; });
+}
+
+function cloudPull() {
+  if (window._fbReady) return Promise.resolve(true); // Firebase handles it via listeners
+  var s = window._SYNC;
+  if (!s || !s.ready) return Promise.resolve(false);
+  var now = Date.now();
+  if (now - s.lastSync < 10000) return Promise.resolve(false);
+  s.lastSync = now;
+  return fetch('https://api.jsonbin.io/v3/b/' + s.binId + '/latest', {
+    headers: {'X-Master-Key': s.apiKey, 'X-Bin-Meta': 'false'}
+  }).then(function(r){ return r.json(); })
+    .then(function(json) {
+      var data = json.record || json;
+      if (!data) return false;
+      if (data.products && data.products.length > 0) localStorage.setItem('waa_v5_prods', JSON.stringify(data.products));
+      if (data.categories && data.categories.length > 0) localStorage.setItem('waa_v5_cats', JSON.stringify(data.categories));
+      return true;
+    }).catch(function(){ return false; });
+}
+
+// ══ SAVE PRODUCT ══
+async function saveProd(isDraft) {
+  isDraft = isDraft || false;
+  var name  = document.getElementById('p-name').value.trim();
+  var price = parseFloat(document.getElementById('p-price').value);
+  var stock = parseInt(document.getElementById('p-stock').value) || 0;
+  var cat   = document.getElementById('p-cat').value;
+  if (!name)          { toast('Product name is required','❌'); return; }
+  if (!cat)           { toast('Please select a category','❌'); return; }
+  if (!price||price<=0){ toast('Enter a valid price','❌'); return; }
+
+  var saveBtn  = document.getElementById('save-txt');
+  var saveMsg  = document.getElementById('save-msg');
+  var upStatus = document.getElementById('up-status');
+  saveBtn.textContent = '⏳ Saving…'; saveBtn.disabled = true;
+  saveMsg.style.display = 'none';
+
+  var editId = document.getElementById('edit-id').value;
+  var prodId = editId || ('p' + Date.now());
+  var imageUrls = editImgs.slice();
+
+  if (pendImgs.length) {
+    if (window._fbReady && window._fbST) {
+      // ── Firebase Storage upload (permanent URLs, works on all devices) ──
+      if (upStatus) upStatus.textContent = '📤 Uploading images to Firebase…';
+      var uploaded = await Promise.all(pendImgs.slice(0,6).map(function(f) {
+        return fbUploadImg(f, prodId);
+      }));
+      var urls = uploaded.filter(Boolean);
+      if (urls.length > 0) {
+        imageUrls = imageUrls.concat(urls);
+        if (upStatus) upStatus.textContent = '✅ Images uploaded to Firebase!';
+      } else {
+        // Storage failed — compress as base64 fallback
+        if (upStatus) upStatus.textContent = '📸 Compressing images locally…';
+        var compressed = await Promise.all(pendImgs.slice(0,6).map(function(f){return compressImg(f,600,0.65);}));
+        imageUrls = imageUrls.concat(compressed.filter(Boolean));
+      }
+    } else {
+      // No Firebase — compress and store base64 locally
+      if (upStatus) upStatus.textContent = '📸 Compressing images…';
+      var compressed = await Promise.all(pendImgs.slice(0,6).map(function(f){return compressImg(f,600,0.65);}));
+      imageUrls = imageUrls.concat(compressed.filter(Boolean));
+      if (upStatus) upStatus.textContent = '⚠️ Images saved locally only — add Firebase to sync images';
+    }
+  }
+
+  var data = {
+    id: prodId,
+    name: name,
+    desc: document.getElementById('p-desc').value,
+    cat: cat,
+    brand: document.getElementById('p-brand').value,
+    price: price,
+    mrp: parseFloat(document.getElementById('p-mrp').value) || price,
+    age: document.getElementById('p-age').value,
+    stock: stock,
+    sizes: document.getElementById('p-sizes').value,
+    emoji: document.getElementById('p-emoji').value || '👗',
+    status: isDraft ? 'Draft' : document.getElementById('p-status').value,
+    badge: document.getElementById('p-badge').value,
+    featured: document.getElementById('p-featured').value,
+    images: imageUrls,
+    updatedAt: new Date().toISOString()
+  };
+
+  var prods = gP();
+  if (editId) { prods = prods.map(function(p){return p.id===editId?data:p;}); } else { prods.unshift(data); }
+  sP(prods);
+
+  saveBtn.textContent = '💾 Save Product'; saveBtn.disabled = false;
+  saveMsg.textContent = editId ? '✅ Product updated!' : '✅ Product saved!';
+  saveMsg.style.cssText = 'display:block;background:rgba(78,203,113,.12);color:#4ecb71;font-size:.78rem;font-weight:700;text-align:center;padding:.5rem;border-radius:8px;margin-top:.5rem';
+  setTimeout(function(){saveMsg.style.display='none';}, 3000);
+  toast(editId ? 'Product updated! ✅' : 'Product saved! 🎉');
+  if (!editId) clrProdForm();
+  renderAdmProd();
+  if (data.status === 'Active') renderHome();
+
+  // Save to Firebase Firestore (real-time — all devices update instantly)
+  if (window._fbReady) {
+    fbSaveProd(data).then(function(id) {
+      if (id && upStatus) {
+        upStatus.textContent = '✅ Saved to Firebase — all devices updated!';
+        setTimeout(function(){ if(upStatus) upStatus.textContent=''; }, 3000);
+      }
+    });
+  } else if (window._SYNC && window._SYNC.ready) {
+    // JSONBin fallback
+    if (upStatus) upStatus.textContent = '☁️ Syncing via JSONBin…';
+    cloudPush().then(function(ok) {
+      if (upStatus) upStatus.textContent = ok ? '✅ Synced via JSONBin' : '✅ Saved locally';
+      setTimeout(function(){ if(upStatus) upStatus.textContent=''; }, 3000);
+    });
+  }
+}
+
+function saveDraft() { document.getElementById('p-status').value = 'Draft'; saveProd(true); }
+
+function clrProdForm() {
+  ['p-name','p-desc','p-brand','p-price','p-mrp','p-stock','p-sizes','p-emoji','p-mt','p-md'].forEach(function(id){
+    var e = document.getElementById(id); if(e) e.value='';
+  });
+  var pc = document.getElementById('p-cat'); if(pc) pc.value='';
+  var ps = document.getElementById('p-status'); if(ps) ps.value='Active';
+  var pb = document.getElementById('p-badge'); if(pb) pb.value='';
+  var pf = document.getElementById('p-featured'); if(pf) pf.value='no';
+  var ei = document.getElementById('edit-id'); if(ei) ei.value='';
+  clrImgPrev();
+}
+
+function cancelEdit() {
+  clrProdForm();
+  var t = document.getElementById('ap-title'); if(t) t.textContent = 'Add New Product';
+  var b = document.getElementById('ap-bc'); if(b) b.textContent = 'Add Product';
+  var cb = document.getElementById('cancel-btn'); if(cb) cb.style.display='none';
+  var st = document.getElementById('save-txt'); if(st) st.textContent='💾 Save Product';
+}
+
+// ══ EDIT PRODUCT ══
+function editProd(id) {
+  var p = gP().find(function(x){return x.id===id;}); if(!p) return;
+  admTab('add-product', null);
+  var e = function(i){return document.getElementById(i);};
+  e('edit-id').value    = id;
+  e('p-name').value     = p.name||'';
+  e('p-desc').value     = p.desc||'';
+  e('p-brand').value    = p.brand||'';
+  e('p-cat').value      = p.cat||'';
+  e('p-price').value    = p.price||'';
+  e('p-mrp').value      = p.mrp||'';
+  e('p-age').value      = p.age||'2-5';
+  e('p-stock').value    = p.stock||'';
+  e('p-sizes').value    = p.sizes||'';
+  e('p-emoji').value    = p.emoji||'';
+  e('p-status').value   = p.status||'Active';
+  e('p-badge').value    = p.badge||'';
+  e('p-featured').value = p.featured||'no';
+  var at = e('ap-title'); if(at) at.textContent = 'Edit: '+p.name;
+  var ab = e('ap-bc'); if(ab) ab.textContent = 'Edit Product';
+  var cb = e('cancel-btn'); if(cb) cb.style.display='block';
+  var sb = e('save-txt'); if(sb) sb.textContent='💾 Update Product';
+  editImgs = (p.images||[]).slice(); pendImgs=[];
+  var prev = e('img-prev'); if(prev) prev.innerHTML='';
+  editImgs.forEach(function(url, i) {
+    var div = document.createElement('div'); div.className='ipi';
+    var img = document.createElement('img'); img.src=url; img.style.cssText='width:100%;height:100%;object-fit:cover';
+    var del = document.createElement('button'); del.className='ipd'; del.textContent='×';
+    (function(u){del.addEventListener('click',function(){editImgs=editImgs.filter(function(x){return x!==u;});del.parentElement.remove();});})(url);
+    div.appendChild(img); div.appendChild(del);
+    if(prev) prev.appendChild(div);
+  });
+  window.scrollTo(0,0);
+}
+
+async function delProd(id) {
+  if(!confirm('Delete this product? This cannot be undone.')) return;
+  sP(gP().filter(function(p){return p.id!==id;}));
+  renderAdmProd(); renderDashStats(); renderHome();
+  toast('Product deleted','🗑️');
+  if (window._fbReady) {
+    fbDelProd(id);
+  } else if (window._SYNC && window._SYNC.ready) {
+    cloudPush();
+  }
+}
+
+// ══ CATEGORIES ══
+async function saveCat() {
+  var name = document.getElementById('c-name').value.trim();
+  if(!name){toast('Category name required','❌');return;}
+  var cats = gC();
+  var nc = {
+    id:'c'+Date.now(), name:name,
+    slug: document.getElementById('c-slug').value || name.toLowerCase().replace(/\s+/g,'-'),
+    emoji: document.getElementById('c-emoji').value || '📦',
+    desc: document.getElementById('c-desc').value
+  };
+  cats.push(nc); sC(cats);
+  ['c-name','c-slug','c-emoji','c-desc'].forEach(function(i){var e=document.getElementById(i);if(e)e.value='';});
+  renderCatT(); toast('Category added! 🏷️');
+  if (window._fbReady) { fbSaveCat(nc); }
+  else if (window._SYNC && window._SYNC.ready) { cloudPush(); }
+}
+
+async function delCat(id) {
+  if(!confirm('Delete this category?')) return;
+  sC(gC().filter(function(c){return c.id!==id;}));
+  renderCatT(); toast('Category deleted','🗑️');
+  if (window._fbReady) { fbDelCat(id); }
+  else if (window._SYNC && window._SYNC.ready) { cloudPush(); }
+}
+
+function renderCatT() {
+  var t = document.getElementById('cat-t'); if(!t) return;
+  var cats = gC(), prods = gP();
+  if(!cats.length){t.innerHTML='<tr><td colspan="5" style="text-align:center;color:#7c6fa0;padding:2rem">No categories yet</td></tr>';return;}
+  t.innerHTML = cats.map(function(c) {
+    return '<tr>'
+      +'<td style="font-size:1.4rem">'+(c.emoji||'📦')+'</td>'
+      +'<td style="font-weight:800;color:#ede9ff">'+c.name+'</td>'
+      +'<td style="font-size:.76rem;color:#7c6fa0">'+(c.slug||'')+'</td>'
+      +'<td>'+prods.filter(function(p){return p.cat===c.name;}).length+'</td>'
+      +'<td style="display:flex;gap:.4rem">'
+      +'<button class="abt-o" onclick="doEditCatMsg()">Edit</button>'
+      +'<button class="abt-d" data-cid="'+c.id+'" onclick="delCat(this.dataset.cid)">Del</button>'
+      +'</td></tr>';
+  }).join('');
+}
+
+// ══ ADMIN PRODUCT TABLE ══
+function renderAdmProd() {
+  var t = document.getElementById('prod-t'); if(!t) return;
+  var q  = (document.getElementById('ps-q')&&document.getElementById('ps-q').value||'').toLowerCase();
+  var cF = (document.getElementById('ps-cat')&&document.getElementById('ps-cat').value)||'';
+  var sF = (document.getElementById('ps-st')&&document.getElementById('ps-st').value)||'';
+  var prods = gP();
+  if(q)  prods = prods.filter(function(p){return p.name.toLowerCase().includes(q)||p.cat.toLowerCase().includes(q)||(p.brand||'').toLowerCase().includes(q);});
+  if(cF) prods = prods.filter(function(p){return p.cat===cF;});
+  if(sF) prods = prods.filter(function(p){return p.status===sF;});
+  if(!prods.length){t.innerHTML='<tr><td colspan="7" style="text-align:center;color:#7c6fa0;padding:2rem;font-weight:700">No products found</td></tr>';return;}
+  var stCls = {Active:'sp-ac',Draft:'sp-dr','Out of Stock':'sp-oo'};
+  var agLbl = {'0-2':'0–2','2-5':'2–5','5-10':'5–10','10-14':'10–14',all:'All'};
+  t.innerHTML = prods.map(function(p) {
+    var bg = catBg(p.cat);
+    var imgH = (p.images&&p.images.length)
+      ? '<img src="'+p.images[0]+'" class="at-thumb">'
+      : '<div class="at-thumb" style="background:'+bg+'">'+( p.emoji||'👗')+'</div>';
+    return '<tr>'
+      +'<td><div style="display:flex;align-items:center;gap:.75rem">'+imgH
+      +'<div><div style="font-weight:700">'+p.name+'</div>'+(p.brand?'<div style="font-size:.72rem;color:#c084fc">'+p.brand+'</div>':'')+'</div></div></td>'
+      +'<td style="color:#7c6fa0">'+p.cat+'</td>'
+      +'<td style="color:#7c6fa0;font-size:.78rem">'+(agLbl[p.age]||p.age)+'</td>'
+      +'<td><span style="font-weight:800">₹'+p.price.toLocaleString()+'</span>'+(p.mrp>p.price?' <span style="font-size:.73rem;text-decoration:line-through;color:#7c6fa0">₹'+p.mrp+'</span>':'')+'</td>'
+      +'<td style="'+(p.stock<15?'color:#fcd34d;font-weight:800':'')+'">'+p.stock+'</td>'
+      +'<td><span class="sp '+(stCls[p.status]||'sp-dr')+'">'+p.status+'</span></td>'
+      +'<td style="display:flex;gap:.4rem">'
+      +'<button class="abt-o" data-pid="'+p.id+'" onclick="editProd(this.dataset.pid)">✏️ Edit</button>'
+      +'<button class="abt-d" data-pid="'+p.id+'" onclick="delProd(this.dataset.pid)">🗑️</button>'
+      +'</td></tr>';
+  }).join('');
+}
+
+// ══ DASHBOARD ══
+function renderDashStats() {
+  var prods = gP();
+  var active = prods.filter(function(p){return p.status==='Active';});
+  var low    = prods.filter(function(p){return p.stock<15;});
+  var c = document.getElementById('d-pCnt'); if(c) c.textContent = active.length;
+  var n = document.getElementById('d-pNote'); if(n) n.textContent = low.length + ' low stock';
+  var ords = gOrders();
+  var oc = document.getElementById('d-ordCnt'); if(oc) oc.textContent = ords.length.toLocaleString();
+  var on = document.getElementById('d-ordNote');
+  if(on) { var td=ords.filter(function(o){return new Date(o.dateISO).toDateString()===new Date().toDateString();}).length; on.textContent=td+' orders today'; }
+  var ot = document.getElementById('d-orders-t');
+  if(ot) {
+    var recent = ords.slice(0,5);
+    var stMap = {Paid:'sp-pa',Pending:'sp-p',Shipped:'sp-sh',Delivered:'sp-de',Cancelled:'sp-oo'};
+    ot.innerHTML = recent.length ? recent.map(function(o){
+      return '<tr><td style="font-family:monospace;font-size:.73rem;color:#c084fc">'+(o.orderId||'#'+o.id)+'</td>'
+        +'<td>'+(o.customer||'Customer')+'</td>'
+        +'<td style="font-weight:800">₹'+(o.amount||0).toLocaleString()+'</td>'
+        +'<td><span class="sp '+(stMap[o.status]||'sp-p')+'">'+o.status+'</span></td></tr>';
+    }).join('') : '<tr><td colspan="4" style="text-align:center;color:#7c6fa0;padding:1.5rem;font-size:.8rem;font-weight:700">No orders yet</td></tr>';
+  }
+  var tp = document.getElementById('d-top-p');
+  if(tp) {
+    tp.innerHTML = active.slice(0,4).map(function(p){
+      var img = (p.images&&p.images.length) ? '<img src="'+p.images[0]+'" style="width:40px;height:40px;border-radius:8px;object-fit:cover;flex-shrink:0">' : '<span style="font-size:1.4rem">'+(p.emoji||'👗')+'</span>';
+      return '<div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.85rem">'
+        +'<div style="width:40px;height:40px;border-radius:8px;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center">'+img+'</div>'
+        +'<div style="flex:1"><div style="font-size:.83rem;font-weight:700;color:#ede9ff">'+p.name+'</div><div style="font-size:.7rem;color:#7c6fa0">'+Math.floor(Math.random()*80+60)+' sold</div></div>'
+        +'<span class="sp sp-ac">Active</span></div>';
+    }).join('');
+  }
+}
+
+// ══ RENDER ORDERS ══
+function renderOrders() {
+  var t = document.getElementById('real-orders-t'); if(!t) return;
+  var orders = gOrders();
+  if(!orders.length){
+    t.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#7c6fa0;padding:3rem;font-weight:700">'
+      +'<div style="font-size:2.5rem;margin-bottom:.75rem">📦</div>'
+      +'No orders yet. Orders placed by customers will appear here automatically!</td></tr>';
+    return;
+  }
+  var stMap = {Paid:'sp-pa',Pending:'sp-p',Shipped:'sp-sh',Delivered:'sp-de',Cancelled:'sp-oo'};
+  t.innerHTML = orders.map(function(o) {
+    var opts = ['Pending','Paid','Shipped','Delivered','Cancelled'].map(function(s){
+      return '<option'+(o.status===s?' selected':'')+'>'+s+'</option>';
+    }).join('');
+    // Clean phone — digits only
+    var ph = (o.phone||'').replace(/[^0-9]/g,'');
+    if(ph.length===10) ph = '91'+ph; // add India code
+    var hasPhone = ph.length >= 10;
+    // WhatsApp buttons — use data attributes to avoid quote issues in onclick
+    var oid = o.orderId||('#'+o.id);
+    var amt = String(o.amount||0);
+    var waBtn = hasPhone
+      ? '<div style="display:flex;flex-direction:column;gap:.3rem">'
+        +'<button class="wa-btn" data-ph="'+ph+'" data-oid="'+oid+'" data-st="Confirmed" data-amt="'+amt+'" style="background:#25D366;color:#fff;border:none;border-radius:6px;padding:.25rem .55rem;font-size:.68rem;font-weight:700;cursor:pointer;white-space:nowrap">✅ Confirmed</button>'
+        +'<button class="wa-btn" data-ph="'+ph+'" data-oid="'+oid+'" data-st="Shipped"   data-amt="'+amt+'" style="background:#5bb8ff;color:#fff;border:none;border-radius:6px;padding:.25rem .55rem;font-size:.68rem;font-weight:700;cursor:pointer;white-space:nowrap">🚚 Shipped</button>'
+        +'<button class="wa-btn" data-ph="'+ph+'" data-oid="'+oid+'" data-st="Delivered" data-amt="'+amt+'" style="background:#4ecb71;color:#fff;border:none;border-radius:6px;padding:.25rem .55rem;font-size:.68rem;font-weight:700;cursor:pointer;white-space:nowrap">🎉 Delivered</button>'
+        +'<button class="wa-btn" data-ph="'+ph+'" data-oid="'+oid+'" data-st="Cancelled" data-amt="'+amt+'" style="background:#ff5252;color:#fff;border:none;border-radius:6px;padding:.25rem .55rem;font-size:.68rem;font-weight:700;cursor:pointer;white-space:nowrap">❌ Cancelled</button>'
+        +'</div>'
+      : '<span style="font-size:.7rem;color:#7c6fa0">No phone</span>';
+    return '<tr>'
+      +'<td style="font-family:monospace;font-size:.72rem;color:#c084fc">'+(o.orderId||'#'+o.id)+'</td>'
+      +'<td style="font-weight:700">'+(o.customer||'—')+'</td>'
+      +'<td style="font-size:.73rem;color:#7c6fa0">'+(o.phone||'—')+'</td>'
+      +'<td>'+(o.items||0)+'</td>'
+      +'<td style="font-weight:800">₹'+(o.amount||0).toLocaleString()+'</td>'
+      +'<td style="color:#7c6fa0;font-size:.73rem">'+(o.date||'—')+'<br><span style="font-size:.65rem">'+(o.time||'')+'</span></td>'
+      +'<td><span class="sp '+(stMap[o.status]||'sp-p')+'">'+(o.status||'Pending')+'</span></td>'
+      +'<td><select class="as-sel" style="padding:.22rem .5rem;font-size:.7rem" data-oid="'+o.id+'" onchange="updOrderStatus(this.dataset.oid,this.value)">'+opts+'</select></td>'
+      +'<td>'+waBtn+'</td>'
+      +'</tr>';
+  }).join('');
+}
+
+// ══ ADMIN TAB SWITCHER ══
+function admTab(sec, btn) {
+  document.querySelectorAll('.asec').forEach(function(s){ s.classList.remove('on'); });
+  var t = document.getElementById('as-'+sec);
+  if (t) t.classList.add('on');
+  document.querySelectorAll('.adm-tab').forEach(function(t){ t.classList.remove('on'); });
+  if (btn) { btn.classList.add('on'); }
+  else { var mt = document.querySelector('.adm-tab[data-sec="'+sec+'"]'); if(mt) mt.classList.add('on'); }
+  // Save current tab to sessionStorage so refresh stays on same tab
+  sessionStorage.setItem('waa_adm_tab', sec);
+  if (sec === 'products')    renderAdmProd();
+  if (sec === 'dashboard')   renderDashStats();
+  if (sec === 'categories')  renderCatT();
+  if (sec === 'orders')      renderOrders();
+  if (sec === 'add-product') { pendImgs=[]; editImgs=[]; var ip=document.getElementById('img-prev'); if(ip) ip.innerHTML=''; }
+}
+
+// Event delegation for WhatsApp buttons (handles dynamic rows)
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('.wa-btn');
+  if (!btn) return;
+  var ph  = btn.dataset.ph;
+  var oid = btn.dataset.oid;
+  var st  = btn.dataset.st;
+  var amt = btn.dataset.amt;
+  // Get customer name from same row
+  var row = btn.closest('tr');
+  var cust = row ? (row.cells[1] && row.cells[1].textContent.trim()) : 'Customer';
+  sendWA(ph, oid, cust, st, amt);
+});
+
+function updOrderStatus(id, status) {
+  var orders = gOrders();
+  var o = orders.find(function(x){return x.id===id;});
+  if(o){ o.status=status; sOrders(orders); }
+  fbUpdateOrderStatus(id, status);
+  toast('Order status updated! Send WhatsApp to notify customer ✅','✅');
+  renderOrders(); // refresh to show updated status badge
+}
+
+// ── WHATSAPP NOTIFICATION ──
+function sendWA(phone, orderId, customer, statusType, amount) {
+  var name = customer || 'Customer';
+  var storeLink = 'https://d2c-beta.vercel.app';
+  var msg = '';
+
+  if (statusType === 'Confirmed') {
+    msg = 'Hello ' + name + '! 👋\n\n'
+      + '✅ *Your order is CONFIRMED!*\n\n'
+      + '📦 Order ID: ' + orderId + '\n'
+      + '💰 Amount: ₹' + amount + '\n\n'
+      + '🏪 *WAA Kids Closet*\n'
+      + 'Thank you for shopping with us! We are preparing your order.\n\n'
+      + '📍 Harihar, Karnataka\n'
+      + '📞 +91 93800 13093';
+  } else if (statusType === 'Shipped') {
+    msg = 'Hello ' + name + '! 👋\n\n'
+      + '🚚 *Your order has been SHIPPED!*\n\n'
+      + '📦 Order ID: ' + orderId + '\n'
+      + '💰 Amount: ₹' + amount + '\n\n'
+      + 'Your order is on the way! Expected delivery in 2–5 days.\n\n'
+      + '🏪 *WAA Kids Closet*\n'
+      + '📞 +91 93800 13093\n'
+      + 'For any queries, reply to this message.';
+  } else if (statusType === 'Delivered') {
+    msg = 'Hello ' + name + '! 🎉\n\n'
+      + '✅ *Your order has been DELIVERED!*\n\n'
+      + '📦 Order ID: ' + orderId + '\n'
+      + '💰 Amount: ₹' + amount + '\n\n'
+      + 'We hope you love your purchase! 💕\n\n'
+      + '⭐ Share your feedback — it helps us grow!\n\n'
+      + '🛍️ Shop again: ' + storeLink + '\n'
+      + '🏪 *WAA Kids Closet* | +91 93800 13093';
+  } else if (statusType === 'Cancelled') {
+    msg = 'Hello ' + name + ',\n\n'
+      + '❌ *Your order has been CANCELLED.*\n\n'
+      + '📦 Order ID: ' + orderId + '\n'
+      + '💰 Amount: ₹' + amount + '\n\n'
+      + 'If you paid online, your refund will be processed in 3–5 business days.\n\n'
+      + 'For any queries:\n'
+      + '📞 +91 93800 13093\n'
+      + '🏪 *WAA Kids Closet*, Harihar';
+  }
+
+  var encoded = encodeURIComponent(msg);
+  var waUrl = 'https://wa.me/' + phone + '?text=' + encoded;
+  window.open(waUrl, '_blank');
+  toast('WhatsApp opened for ' + name + '!', '📱');
+}
+
+// ══ ADMIN AUTH ══
+var ADMIN_EMAIL = 'admin@waakids.in';
+var ADMIN_PASS  = 'waa@2025';
+
+async function adminLogin() {
+  var email = document.getElementById('adm-email').value.trim();
+  var pwd   = document.getElementById('adm-pwd').value;
+  var err   = document.getElementById('adm-err');
+  var btn   = document.getElementById('adm-login-btn');
+  err.classList.remove('show');
+  if (btn) { btn.textContent = 'Signing in…'; btn.disabled = true; }
+
+  if (window._fbReady && window._fbAU) {
+    try {
+      var cred = await window._fbAU.signInWithEmailAndPassword(email, pwd);
+      var name = cred.user.displayName || cred.user.email.split('@')[0];
+      var uEl  = document.getElementById('adm-uname'); if(uEl)  uEl.textContent  = name;
+      var avEl = document.getElementById('adm-av');    if(avEl) avEl.textContent = name[0].toUpperCase();
+      if (btn) { btn.textContent = 'Sign In'; btn.disabled = false; }
+      sessionStorage.setItem('waa_adm_logged', '1');
+      goPage('admin');
+    } catch(e) {
+      if (btn) { btn.textContent = 'Sign In'; btn.disabled = false; }
+      var msg = 'Wrong email or password';
+      if (e.code === 'auth/user-not-found')    msg = 'No account with that email';
+      if (e.code === 'auth/wrong-password')    msg = 'Wrong password';
+      if (e.code === 'auth/too-many-requests') msg = 'Too many attempts — try later';
+      err.textContent = msg;
+      err.classList.add('show');
+    }
+  } else {
+    if (email === ADMIN_EMAIL && pwd === ADMIN_PASS) {
+      var uEl  = document.getElementById('adm-uname'); if(uEl)  uEl.textContent  = 'WAA Admin';
+      var avEl = document.getElementById('adm-av');    if(avEl) avEl.textContent = 'W';
+      if (btn) { btn.textContent = 'Sign In'; btn.disabled = false; }
+      sessionStorage.setItem('waa_adm_logged', '1');
+      goPage('admin');
+    } else {
+      if (btn) { btn.textContent = 'Sign In'; btn.disabled = false; }
+      err.textContent = 'Wrong email or password';
+      err.classList.add('show');
+    }
+  }
+}
+
+async function adminLogout() {
+  if (window._fbReady && window._fbAU) {
+    try { await window._fbAU.signOut(); } catch(e) {}
+  }
+  sessionStorage.removeItem('waa_adm_logged');
+  sessionStorage.removeItem('waa_cur_page');
+  sessionStorage.removeItem('waa_adm_tab');
+  goPage('admin-login');
+  toast('Logged out successfully', '👋');
+}
+
+// ══ MISC ══
+function copyCpn(code) {
+  navigator.clipboard.writeText(code)
+    .then(function(){toast('Code '+code+' copied!','📋');})
+    .catch(function(){toast('Use code: '+code,'📋');});
+}
+function doNL(e) { e.preventDefault(); toast('Subscribed! Welcome to WAA Kids Closet 💕','💕'); e.target.reset(); }
+function doContactMsg() { toast('Message sent! We\'ll reply within 1 hour 💕','💕'); }
+function doEditCatMsg() { toast('To edit: delete and re-add with new name'); }
+
+// ══ FIREBASE SETUP GUIDE ══
+function showFbSetupGuide() {
+  var steps = [
+    'FIREBASE SETUP GUIDE (5 minutes, free)',
+    '1. console.firebase.google.com -> Create project: waa-kids-closet',
+    '2. Firestore Database -> Create -> Test mode',
+    '3. Storage -> Get started -> Test mode',
+    '4. Authentication -> Email/Password -> Enable -> Add your email + password',
+    '5. Project Settings (gear) -> Your Apps -> Web -> Register -> copy firebaseConfig',
+    '6. Open HTML in Notepad -> find line 28 -> paste values -> Save -> Upload to Vercel'
+  ].join('\n');
+  alert(steps);
+}
+
+function applyFirebaseConfig() {
+  var raw = (document.getElementById('fb-config-inp')||{}).value.trim();
+  if (!raw) { toast('Paste your Firebase config first','X'); return; }
+  try {
+    function extractVal(key) {
+      var idx = raw.indexOf(key);
+      if (idx < 0) return '';
+      var colon = raw.indexOf(':', idx);
+      if (colon < 0) return '';
+      var rest = raw.slice(colon+1).trim();
+      var q = rest[0];
+      if (q === '"') return rest.slice(1, rest.indexOf('"', 1));
+      return rest.split(',')[0].split('}')[0].trim();
+    }
+    var cfg = {
+      apiKey: extractVal('apiKey'), authDomain: extractVal('authDomain'),
+      projectId: extractVal('projectId'), storageBucket: extractVal('storageBucket'),
+      messagingSenderId: extractVal('messagingSenderId'), appId: extractVal('appId')
+    };
+    if (!cfg.apiKey || !cfg.projectId) { toast('Config incomplete - check all fields','X'); return; }
+    localStorage.setItem('waa_fb_config', JSON.stringify(cfg));
+    toast('Saved! Reloading...','F');
+    setTimeout(function() { location.reload(); }, 2000);
+  } catch(e) { toast('Could not read config','X'); }
+}
+
+
+
+function startAutoSync() {
+  if (window._fbReady) return;
+  if (!window._SYNC || !window._SYNC.ready) return;
+  setInterval(async function() {
+    var ok = await cloudPull();
+    if (ok) {
+      var pg = (document.querySelector('.page.active')||{}).id || '';
+      if (pg === 'page-home') renderHome();
+      if (pg === 'page-shop') renderShop();
+    }
+  }, 30000);
+}
+
+// ══ CLOUD SYNC ══
+function fetchFromCloud() {
+  if (window._fbReady) return;
+  if (!window._SYNC || !window._SYNC.ready) return;
+  cloudPull().then(function(ok) { if (ok) renderHome(); }).catch(function(){});
+}
+
+function startAutoSync() {
+  if (window._fbReady) return;
+  if (!window._SYNC || !window._SYNC.ready) return;
+  setInterval(function() {
+    cloudPull().then(function(ok) {
+      if (!ok) return;
+      var pg = (document.querySelector('.page.active')||{}).id || '';
+      if (pg === 'page-home') renderHome();
+      if (pg === 'page-shop') renderShop();
+    }).catch(function(){});
+  }, 30000);
+}
+
+// ══ INIT ══
+(function restoreSession() {
+  var savedPage = sessionStorage.getItem('waa_cur_page');
+  if (savedPage === 'admin') {
+    var wasAdmin = sessionStorage.getItem('waa_adm_logged') === '1';
+    if (wasAdmin) { goPage('admin'); return; }
+  }
+  renderHome();
+  updBadge();
+})();
+setTimeout(function() {
+  fetchFromCloud();
+  startAutoSync();
+  var hint = document.getElementById('adm-mode-hint');
+  if (hint) {
+    hint.textContent = window._fbReady
+      ? '🔥 Secured with Firebase Authentication'
+      : '🔑 Local login: ' + ADMIN_EMAIL;
+  }
+}, 800);
+
+</script>
+</body>
+</html>
