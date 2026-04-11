@@ -822,7 +822,7 @@ footer{background:var(--tx);color:#fff;padding:4rem 2rem 2rem}
         <div><div class="stag">Browse by Category</div><h2 class="stit">Shop for Every Little One 🌈</h2></div>
         <button class="btn btn-ol btn-sm" onclick="goPage('shop')">View All →</button>
       </div>
-      <div class="cat-grid">
+      <div class="cat-grid" id="catGrid">
         <div class="cat-c" onclick="shopCat('Girls Wear')"><div class="cat-img-wrap" style="font-size:3.5rem;line-height:1;margin-bottom:.8rem">👗</div><div class="cn">Girls Wear</div><div class="ck">Dresses, Frocks & more</div></div>
         <div class="cat-c" onclick="shopCat('Boys Wear')"><div class="cat-img-wrap" style="font-size:3.5rem;line-height:1;margin-bottom:.8rem">👕</div><div class="cn">Boys Wear</div><div class="ck">Tees, Shirts & more</div></div>
         <div class="cat-c" onclick="shopCat('Newborn')"><div class="cat-img-wrap" style="font-size:3.5rem;line-height:1;margin-bottom:.8rem">🍼</div><div class="cn">Newborn</div><div class="ck">0–12 months</div></div>
@@ -1836,7 +1836,69 @@ function hmFilt(age, btn) {
 }
 
 // ══ SHOP ══
+function getCatEmoji(name) {
+  var m = {
+    'Girls Wear':'👗','Boys Wear':'👕','Newborn':'🍼','Party Wear':'🎉',
+    'Nightwear':'🌙','Accessories':'👟','Sets & Combos':'👔',
+    'Winter Wear':'🧥','Ethnic Wear':'🥻','Sports Wear':'⚽',
+    'School Wear':'🎒','Footwear':'👠','Tops':'👚','Bottoms':'👖'
+  };
+  return m[name] || '👗';
+}
+
+function getCatSub(name) {
+  var m = {
+    'Girls Wear':'Dresses, Frocks & more','Boys Wear':'Tees, Shirts & more',
+    'Newborn':'0–12 months','Party Wear':'Special occasions',
+    'Nightwear':'Pyjamas & sleepwear','Accessories':'Footwear, Hairbands & more',
+    'Sets & Combos':'Matching sets','Winter Wear':'Jackets & woolens',
+    'Ethnic Wear':'Kurtas & lehengas','Sports Wear':'Active & outdoor',
+    'School Wear':'Uniforms & bags','Footwear':'Shoes & sandals',
+    'Tops':'T-shirts & blouses','Bottoms':'Pants & shorts'
+  };
+  return m[name] || 'Browse collection';
+}
+
+function renderHomeCats() {
+  var grid = document.getElementById('catGrid');
+  if (!grid) return;
+  var cats = gC();
+  var catList = cats.length
+    ? cats.map(function(c){ return c.name; }).filter(Boolean)
+    : ['Girls Wear','Boys Wear','Newborn','Party Wear','Nightwear','Accessories','Sets & Combos'];
+
+  grid.innerHTML = catList.map(function(name) {
+    return '<div class="cat-c" onclick="shopCat(\'' + name + '\')">'
+      + '<div class="cat-img-wrap" style="font-size:3.5rem;line-height:1;margin-bottom:.8rem">' + getCatEmoji(name) + '</div>'
+      + '<div class="cn">' + name + '</div>'
+      + '<div class="ck">' + getCatSub(name) + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function buildFilterSidebar() {
+  var cats = gC();
+  var catList = cats.length
+    ? cats.map(function(c){ return c.name; })
+    : ['Girls Wear','Boys Wear','Newborn','Party Wear','Nightwear','Accessories','Sets & Combos'];
+
+  var catContainer = document.querySelector('#page-shop .fg-b:first-of-type');
+  if (!catContainer) return;
+  catContainer.innerHTML = '<div class="fg-bt">Categories</div>';
+  catList.forEach(function(name) {
+    var lbl = document.createElement('label');
+    lbl.className = 'fo';
+    var inp = document.createElement('input');
+    inp.type = 'checkbox';
+    inp.onchange = applyFilters;
+    lbl.appendChild(inp);
+    lbl.appendChild(document.createTextNode(' ' + name));
+    catContainer.appendChild(lbl);
+  });
+}
+
 function renderShop() {
+  buildFilterSidebar();
   var prods = gP().filter(function(p) { return p.status === 'Active'; });
   var f = prods.slice();
   if (shopAgeF !== 'all') f = f.filter(function(p) { return p.age === shopAgeF; });
@@ -1854,7 +1916,7 @@ function applyFilters() {
   var prods = gP().filter(function(p){ return p.status === 'Active'; });
 
   // Get all checked category boxes by looping all .fo inputs
-  var allBoxes = document.querySelectorAll('#page-shop .fo input[type=checkbox]');
+  var allBoxes = document.querySelectorAll('#page-shop .fg-b:first-of-type .fo input[type=checkbox]');
   var selCats = [], selAges = [];
   var ageMap = {'0–2 Years':'0-2','2–5 Years':'2-5','5–10 Years':'5-10','10–14 Years':'10-14'};
   var ageLabels = Object.keys(ageMap);
@@ -2076,10 +2138,13 @@ function renderCart() {
 }
 
 function setTots(sub) {
-  var tot = Math.max(0, sub - discAmt);
-  var cs = document.getElementById('c-sub'); if (cs) cs.textContent = '₹' + sub.toLocaleString();
-  var cd = document.getElementById('c-disc'); if (cd) cd.textContent = '−₹' + discAmt.toLocaleString();
-  var ct = document.getElementById('c-tot'); if (ct) ct.textContent = '₹' + tot.toLocaleString();
+  var shipping = sub > 0 && sub < 999 ? 49 : 0;
+  var tot = Math.max(0, sub + shipping - discAmt);
+  var cs  = document.getElementById('c-sub');  if (cs)  cs.textContent  = '₹' + sub.toLocaleString();
+  var cd  = document.getElementById('c-disc'); if (cd)  cd.textContent  = '−₹' + discAmt.toLocaleString();
+  var csh = document.getElementById('c-ship'); if (csh) csh.textContent = shipping > 0 ? '₹49' : 'FREE';
+  if (csh) csh.style.color = shipping > 0 ? 'var(--rd)' : 'var(--gn)';
+  var ct  = document.getElementById('c-tot');  if (ct)  ct.textContent  = '₹' + tot.toLocaleString();
 }
 function updCQ(id, d) { var cart=gCart(), i=cart.find(function(x){return x.id===id;}); if(!i)return; i.qty=Math.max(1,i.qty+d); sCart(cart); renderCart(); updBadge(); }
 function rmItem(id) { sCart(gCart().filter(function(i){return i.id!==id;})); renderCart(); updBadge(); toast('Removed','🗑️'); }
@@ -2146,10 +2211,13 @@ function renderCO() {
     }).join('');
   }
   var e = function(id){return document.getElementById(id);};
-  if(e('co-sub')) e('co-sub').textContent = '₹'+sub.toLocaleString();
-  if(e('co-gst')) e('co-gst').textContent = '₹'+gst.toLocaleString();
-  if(e('co-tot')) e('co-tot').textContent = '₹'+tot.toLocaleString();
-  if(e('po-amt')) e('po-amt').textContent = '₹'+tot.toLocaleString();
+  var ship = sub > 0 && sub < 999 ? 49 : 0;
+  var finalTot = tot + ship;
+  if(e('co-sub'))  e('co-sub').textContent  = '₹'+sub.toLocaleString();
+  if(e('co-gst'))  e('co-gst').textContent  = '₹'+gst.toLocaleString();
+  if(e('co-ship')) { e('co-ship').textContent = ship > 0 ? '₹49' : 'FREE'; e('co-ship').style.color = ship > 0 ? '#ff5252' : '#4ecb71'; }
+  if(e('co-tot'))  e('co-tot').textContent  = '₹'+finalTot.toLocaleString();
+  if(e('po-amt'))  e('po-amt').textContent  = '₹'+finalTot.toLocaleString();
 }
 function selPay(el) { document.querySelectorAll('.popt').forEach(function(p){p.classList.remove('on');}); el.classList.add('on'); el.querySelector('input').checked=true; }
 
@@ -2329,7 +2397,8 @@ function doConfirmOrder(tot, cart, payMethod, sub, gst) {
     id: ordId, orderId: '#'+ordId,
     customer: name, phone: ph, city: city,
     items: cart.length,
-    itemList: cart.map(function(i){return {name:i.name,qty:i.qty,price:i.price};}),
+    itemList: cart.map(function(i){return {name:i.name,qty:i.qty,price:i.price,size:i.size||'',color:i.color||''};}),
+    cartItems: cart.map(function(i){return {name:i.name,qty:i.qty,price:i.price,size:i.size||'',color:i.color||'',cat:i.cat||''};}),
     sub: sub, gst: gst, amount: tot,
     payMethod: payMethod, status: 'Paid',
     date: now.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}),
@@ -2708,6 +2777,8 @@ async function delCat(id) {
 }
 
 function populateCatSelect() {
+  buildFilterSidebar();
+  renderHomeCats();
   var sel = document.getElementById('p-cat');
   if (!sel) return;
   var cats = gC();
@@ -2841,7 +2912,20 @@ function renderOrders() {
       +'<td style="font-family:monospace;font-size:.72rem;color:#c084fc">'+(o.orderId||'#'+o.id)+'</td>'
       +'<td style="font-weight:700">'+(o.customer||'—')+'</td>'
       +'<td style="font-size:.73rem;color:#7c6fa0">'+(o.phone||'—')+'</td>'
-      +'<td>'+(o.items||0)+'</td>'
+      +'<td style="font-size:.72rem;max-width:200px">'+
+        (function(){
+          if (o.cartItems && o.cartItems.length) {
+            return o.cartItems.map(function(it){
+              var details = it.name || 'Product';
+              if (it.size)  details += ' | <b>Size:</b> ' + it.size;
+              if (it.color) details += ' | <b>Color:</b> <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:'+it.color+';border:1px solid rgba(0,0,0,.2);vertical-align:middle"></span> ' + it.color;
+              if (it.qty > 1) details += ' ×' + it.qty;
+              return '<div style="margin-bottom:.2rem;padding:.2rem 0;border-bottom:1px solid rgba(255,255,255,.07)">'+details+'</div>';
+            }).join('');
+          }
+          return (o.items||0) + ' item(s)';
+        })()
+        +'</td>'
       +'<td style="font-weight:800">₹'+(o.amount||0).toLocaleString()+'</td>'
       +'<td style="color:#7c6fa0;font-size:.73rem">'+(o.date||'—')+'<br><span style="font-size:.65rem">'+(o.time||'')+'</span></td>'
       +'<td><span class="sp '+(stMap[o.status]||'sp-p')+'">'+(o.status||'Pending')+'</span></td>'
