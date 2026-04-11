@@ -1055,13 +1055,13 @@ footer{background:var(--tx);color:#fff;padding:4rem 2rem 2rem}
     <aside class="sidebar">
       <div class="sb-hd">Filters <button class="sb-clr" onclick="clrFilt()">Clear</button></div>
       <div class="fg-b" id="cat-filter-container"><div class="fg-bt">Categories</div>
-        <label class="fo"><input type="checkbox" onchange="applyFilters()"> Girls Wear</label>
-        <label class="fo"><input type="checkbox" onchange="applyFilters()"> Boys Wear</label>
-        <label class="fo"><input type="checkbox" onchange="applyFilters()"> Newborn</label>
-        <label class="fo"><input type="checkbox" onchange="applyFilters()"> Party Wear</label>
-        <label class="fo"><input type="checkbox" onchange="applyFilters()"> Nightwear</label>
-        <label class="fo"><input type="checkbox" onchange="applyFilters()"> Accessories</label>
-        <label class="fo"><input type="checkbox" onchange="applyFilters()"> Sets &amp; Combos</label>
+        <label class="fo"><input type="checkbox" data-type="cat" data-val="Girls Wear" onchange="applyFilters()"> Girls Wear</label>
+        <label class="fo"><input type="checkbox" data-type="cat" data-val="Boys Wear" onchange="applyFilters()"> Boys Wear</label>
+        <label class="fo"><input type="checkbox" data-type="cat" data-val="Newborn" onchange="applyFilters()"> Newborn</label>
+        <label class="fo"><input type="checkbox" data-type="cat" data-val="Party Wear" onchange="applyFilters()"> Party Wear</label>
+        <label class="fo"><input type="checkbox" data-type="cat" data-val="Nightwear" onchange="applyFilters()"> Nightwear</label>
+        <label class="fo"><input type="checkbox" data-type="cat" data-val="Accessories" onchange="applyFilters()"> Accessories</label>
+        <label class="fo"><input type="checkbox" data-type="cat" data-val="Sets &amp; Combos" onchange="applyFilters()"> Sets &amp; Combos</label>
       </div>
       <div class="fg-b"><div class="fg-bt">Age Group</div>
         <label class="fo"><input type="checkbox" onchange="applyFilters()"> 0–2 Years</label>
@@ -1907,7 +1907,7 @@ function renderHomeCats() {
   var cats = gC();
   var catList = cats.length
     ? cats.map(function(c){ return c.name; }).filter(Boolean)
-    : ['Girls Wear','Boys Wear','Newborn','Party Wear','Nightwear','Accessories','Sets & Combos'];
+    : DCATS.map(function(d){ return d.name; });
 
   grid.innerHTML = catList.map(function(name) {
     return '<div class="cat-c" onclick="shopCat(\'' + name + '\')">'
@@ -1922,7 +1922,7 @@ function buildFilterSidebar() {
   var cats = gC();
   var catList = cats.length
     ? cats.map(function(c){ return c.name; })
-    : ['Girls Wear','Boys Wear','Newborn','Party Wear','Nightwear','Accessories','Sets & Combos'];
+    : DCATS.map(function(d){ return d.name; });
 
   var catContainer = document.getElementById('cat-filter-container');
   if (!catContainer) return;
@@ -1959,17 +1959,31 @@ function renderShop() {
 function applyFilters() {
   var prods = gP().filter(function(p){ return p.status === 'Active'; });
 
-  // Category checkboxes (built dynamically by buildFilterSidebar)
   var selCats = [], selAges = [];
   var ageMap = {'0–2 Years':'0-2','2–5 Years':'2-5','5–10 Years':'5-10','10–14 Years':'10-14'};
+  var ageLabels = Object.keys(ageMap);
 
-  // Read category checkboxes (data-type="cat" added by buildFilterSidebar)
-  document.querySelectorAll('#page-shop input[data-type="cat"]').forEach(function(inp){
-    if (inp.checked) selCats.push(inp.dataset.val || inp.parentElement.textContent.trim());
-  });
-  // Read age checkboxes (data-type="age" added by buildFilterSidebar)
-  document.querySelectorAll('#page-shop input[data-type="age"]').forEach(function(inp){
-    if (inp.checked) selAges.push(inp.dataset.val || '');
+  // Read ALL checkboxes in shop sidebar — works with both static and dynamic
+  document.querySelectorAll('#page-shop .fo input[type=checkbox]').forEach(function(inp) {
+    if (!inp.checked) return;
+    // Check data-type first (dynamic), then fall back to label text
+    var dtype = inp.dataset && inp.dataset.type;
+    var dval  = inp.dataset && inp.dataset.val;
+    if (dtype === 'age') {
+      selAges.push(dval || '');
+      return;
+    }
+    if (dtype === 'cat') {
+      selCats.push(dval || inp.parentElement.textContent.trim());
+      return;
+    }
+    // No data attributes — read label text and classify
+    var lbl = inp.parentElement.textContent.trim();
+    if (ageLabels.indexOf(lbl) >= 0) {
+      selAges.push(ageMap[lbl]);
+    } else if (lbl) {
+      selCats.push(lbl);
+    }
   });
 
   if (selCats.length) prods = prods.filter(function(p){ return selCats.indexOf(p.cat) >= 0; });
