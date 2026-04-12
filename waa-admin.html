@@ -560,7 +560,7 @@ function saveProd(){
   toast((editingId?'Updated':'Saved')+': '+name,'✅');cancelEdit();renderDashStats();
 }
 function saveDraft(){var s=document.getElementById('p-status');if(s)s.value='Draft';saveProd()}
-function delProd(id){if(!confirm('Delete this product?'))return;sP(gP().filter(function(p){return p.id!==id}));renderAdmProd();renderDashStats();toast('Deleted','🗑️')}
+function delProd(id){if(!confirm('Delete this product?'))return;sP(gP().filter(function(p){return p.id!==id}));fbDeleteProd(id);renderAdmProd();renderDashStats();toast('Deleted','🗑️')}
 
 function handleImgSel(event){
   Array.from(event.target.files||[]).forEach(function(file){
@@ -584,11 +584,11 @@ function saveCat(){
   name=name.trim();var emoji=((document.getElementById('c-emoji')||{}).value||'').trim()||'📦';var desc=((document.getElementById('c-desc')||{}).value||'').trim();
   var cats=gC();if(cats.find(function(c){return c.name.toLowerCase()===name.toLowerCase()})){toast('Already exists','⚠️');return}
   cats.push({id:'c'+Date.now(),name:name,emoji:emoji,desc:desc,slug:name.toLowerCase().replace(/\s+/g,'-')});
-  sC(cats);populateCatSelect();renderCatT();
+  sC(cats);fbSaveCat(cats);populateCatSelect();renderCatT();
   document.getElementById('c-name').value='';document.getElementById('c-emoji').value='';document.getElementById('c-desc').value='';
   toast('Added: '+name,'✅');
 }
-function delCat(id){if(!confirm('Delete?'))return;sC(gC().filter(function(c){return c.id!==id}));populateCatSelect();renderCatT();toast('Deleted','🗑️')}
+function delCat(id){if(!confirm('Delete?'))return;var cats=gC().filter(function(c){return c.id!==id});sC(cats);fbSaveCat(cats);populateCatSelect();renderCatT();toast('Deleted','🗑️')}
 function renderCatT(){var tbody=document.getElementById('cat-t');if(!tbody)return;var cats=gC(),prods=gP();tbody.innerHTML=cats.map(function(cat){var count=prods.filter(function(p){return p.cat===cat.name}).length;return'<tr><td style="font-size:1.3rem">'+cat.emoji+'</td><td style="font-weight:700">'+cat.name+'</td><td>'+count+'</td><td><button class="abt-o" onclick="delCat(\''+cat.id+'\')">Delete</button></td></tr>'}).join('')}
 
 function renderOrders(){
@@ -645,12 +645,58 @@ function renderCustomers(){
   tbody.innerHTML=custs.length?custs.map(function(cu){return'<tr><td style="font-weight:700">'+cu.name+'</td><td style="font-size:.76rem;color:var(--mu)">'+cu.phone+'</td><td>'+cu.city+'</td><td>'+cu.orders+'</td><td style="font-weight:800;color:var(--aa)">₹'+cu.total.toLocaleString()+'</td><td style="color:var(--mu);font-size:.75rem">'+cu.last+'</td></tr>'}).join(''):'<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--mu)">No customer data yet</td></tr>';
 }
 
-function fbSaveProd(prod){try{if(typeof firebase!=='undefined'&&firebase.database)firebase.database().ref('products/'+prod.id).set(prod)}catch(e){}}
+function fbSaveProd(prod){
+  try{
+    if(typeof firebase==='undefined'||!firebase.database){
+      toast('Saved to device only (Firebase not connected)','💾');return;
+    }
+    firebase.database().ref('products/'+prod.id).set(prod)
+      .then(function(){toast('✅ Saved to Firebase cloud!','☁️')})
+      .catch(function(e){toast('Firebase error: '+e.message,'⚠️');console.warn(e)});
+  }catch(e){toast('Save error: '+e.message,'⚠️');console.warn(e)}
+}
+function fbSaveCat(cats){
+  try{
+    if(typeof firebase==='undefined'||!firebase.database){
+      toast('Categories saved to device only','💾');return;
+    }
+    var catObj={};
+    cats.forEach(function(c){catObj[c.id]=c});
+    firebase.database().ref('categories').set(catObj)
+      .then(function(){toast('✅ Categories saved to Firebase!','☁️')})
+      .catch(function(e){toast('Firebase error: '+e.message,'⚠️');console.warn(e)});
+  }catch(e){console.warn('fbSaveCat:',e)}
+}
+function fbDeleteProd(id){
+  try{
+    if(typeof firebase==='undefined'||!firebase.database)return;
+    firebase.database().ref('products/'+id).remove();
+  }catch(e){console.warn('fbDeleteProd:',e)}
+}
 function fbSaveOrder(order){try{if(typeof firebase!=='undefined'&&firebase.database)firebase.database().ref('orders/'+order.id).set(order)}catch(e){}}
 function startAutoSync(){
   try{
     if(typeof firebase==='undefined'||!firebase.database)return;
-    firebase.database().ref('products').on('value',function(snap){var data=snap.val();if(data){var prods=Object.values(data);var local=gP();prods.forEach(function(p){if(!local.find(function(x){return x.id===p.id}))local.push(p)});sP(local);renderDashStats()}});
+    // Sync products - overwrite local with Firebase data
+    firebase.database().ref('products').on('value',function(snap){
+      var data=snap.val();
+      if(data){
+        var prods=Object.values(data);
+        sP(prods);
+        renderDashStats();
+        if(document.getElementById('as-products').classList.contains('on'))renderAdmProd();
+      }
+    });
+    // Sync categories
+    firebase.database().ref('categories').on('value',function(snap){
+      var data=snap.val();
+      if(data){
+        var cats=Object.values(data);
+        sC(cats);
+        populateCatSelect();
+        if(document.getElementById('as-categories').classList.contains('on'))renderCatT();
+      }
+    });
     firebase.database().ref('orders').on('value',function(snap){var data=snap.val();if(data){var orders=Object.values(data).sort(function(a,b){return(b.createdAt||0)-(a.createdAt||0)});sOrders(orders);renderDashStats();updateOrderBadge()}});
   }catch(e){}
 }
