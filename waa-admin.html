@@ -625,141 +625,18 @@ document.addEventListener('click',function(e){
   window.open('https://wa.me/'+ph+'?text='+encodeURIComponent(msg),'_blank');
 });
 
-function buildWAMsg(cust, oid, st, amt) {
-  var store = 'WAA Kids Closet';
-  var msgs = {
-    'Confirmed':
-      '🎉 *Order Confirmed!*
-
-'
-      +'Hello *'+cust+'*! 😊
-
-'
-      +'Your order has been successfully *confirmed* and is being prepared with love! 💕
-
-'
-      +'📦 *Order ID:* '+oid+'
-'
-      +'💰 *Amount:* ₹'+amt+'
-'
-      +'🏪 *Store:* '+store+'
-
-'
-      +'We are carefully packing your items and will dispatch them soon! 🛍️
-
-'
-      +'✨ Thank you for shopping with us!
-'
-      +'📞 Need help? Call: +91 93800 13093
-
-'
-      +'_WAA Kids Closet — We-Are-Affordable_ 👑',
-
-    'Shipped':
-      '🚚 *Your Order is on the Way!*
-
-'
-      +'Hello *'+cust+'*! 🎀
-
-'
-      +'Great news! Your order has been *shipped* and is heading your way! 📦✈️
-
-'
-      +'📋 *Order ID:* '+oid+'
-'
-      +'💰 *Amount:* ₹'+amt+'
-'
-      +'🕐 *Expected Delivery:* 3–7 Working Days
-
-'
-      +'Your little one's new outfit is on its way! 👗👕🍼
-
-'
-      +'📍 Track your order by contacting us anytime.
-'
-      +'📞 Support: +91 93800 13093
-
-'
-      +'_WAA Kids Closet — We-Are-Affordable_ 👑',
-
-    'Delivered':
-      '🎉 *Order Delivered Successfully!*
-
-'
-      +'Hello *'+cust+'*! 🥳
-
-'
-      +'Your order has been *delivered*! We hope your little one loves their new outfit! 💕👧👦
-
-'
-      +'📦 *Order ID:* '+oid+'
-'
-      +'💰 *Amount Paid:* ₹'+amt+'
-
-'
-      +'💬 We'd love to hear your feedback! A quick review helps other moms discover us. 🌟
-
-'
-      +'🛍️ Shop again at: *waakidscloset.vercel.app*
-'
-      +'📸 Follow us: *@waa_kids_closet*
-'
-      +'📞 Contact: +91 93800 13093
-
-'
-      +'Thank you for being part of the WAA family! 💛
-
-'
-      +'_WAA Kids Closet — We-Are-Affordable_ 👑',
-
-    'Cancelled':
-      '❌ *Order Cancellation Notice*
-
-'
-      +'Hello *'+cust+'*,
-
-'
-      +'We're sorry to inform you that your order has been *cancelled*. 😔
-
-'
-      +'📦 *Order ID:* '+oid+'
-'
-      +'💰 *Amount:* ₹'+amt+'
-
-'
-      +'If you did not request this cancellation or if you have any questions, please contact us immediately.
-
-'
-      +'📞 *Call/WhatsApp:* +91 93800 13093
-'
-      +'🛍️ *Shop again:* waakidscloset.vercel.app
-
-'
-      +'We hope to serve you again soon! 💕
-
-'
-      +'_WAA Kids Closet — We-Are-Affordable_ 👑'
-  };
-  return msgs[st] || (
-    '👋 Hello *'+cust+'*!
-
-'
-    +'Update on your order *'+oid+'*:
-'
-    +'📦 Status: *'+st+'*
-'
-    +'💰 Amount: ₹'+amt+'
-
-'
-    +'Thank you for shopping at *WAA Kids Closet*! 🛍️
-'
-    +'📞 +91 93800 13093
-
-'
-    +'_WAA Kids Closet — We-Are-Affordable_ 👑'
-  );
+function buildWAMsg(cust,oid,st,amt){
+  var n='\n';
+  var confirmed='🎉 *Order Confirmed!*'+n+n+'Hello *'+cust+'*! 😊'+n+n+'Your order has been successfully *confirmed* and is being prepared with love! 💕'+n+n+'📦 *Order ID:* '+oid+n+'💰 *Amount:* ₹'+amt+n+'🏪 *Store:* WAA Kids Closet'+n+n+'We are carefully packing your items and will dispatch them soon! 🛍️'+n+n+'✨ Thank you for shopping with us!'+n+'📞 Need help? Call: +91 93800 13093'+n+n+'_WAA Kids Closet — We-Are-Affordable_ 👑';
+  var shipped='🚚 *Your Order is on the Way!*'+n+n+'Hello *'+cust+'*! 🎀'+n+n+'Great news! Your order has been *shipped* and is heading your way! 📦✈️'+n+n+'📋 *Order ID:* '+oid+n+'💰 *Amount:* ₹'+amt+n+'🕐 *Expected Delivery:* 3–7 Working Days'+n+n+'Your little one\'s new outfit is on its way! 👗👕🍼'+n+n+'📍 Track your order by contacting us anytime.'+n+'📞 Support: +91 93800 13093'+n+n+'_WAA Kids Closet — We-Are-Affordable_ 👑';
+  var delivered='🎉 *Order Delivered Successfully!*'+n+n+'Hello *'+cust+'*! 🥳'+n+n+'Your order has been *delivered*! We hope your little one loves their new outfit! 💕👧👦'+n+n+'📦 *Order ID:* '+oid+n+'💰 *Amount Paid:* ₹'+amt+n+n+'💬 We\'d love your feedback! A quick review helps other moms discover us. 🌟'+n+n+'🛍️ Shop again: *waakidscloset.vercel.app*'+n+'📸 Follow us: *@waa_kids_closet*'+n+'📞 Contact: +91 93800 13093'+n+n+'Thank you for being part of the WAA family! 💛'+n+n+'_WAA Kids Closet — We-Are-Affordable_ 👑';
+  var cancelled='❌ *Order Cancellation Notice*'+n+n+'Hello *'+cust+'*,'+n+n+'We\'re sorry your order has been *cancelled*. 😔'+n+n+'📦 *Order ID:* '+oid+n+'💰 *Amount:* ₹'+amt+n+n+'If you have any questions please contact us immediately.'+n+n+'📞 *Call/WhatsApp:* +91 93800 13093'+n+'🛍️ *Shop again:* waakidscloset.vercel.app'+n+n+'We hope to serve you again soon! 💕'+n+n+'_WAA Kids Closet — We-Are-Affordable_ 👑';
+  if(st==='Confirmed')return confirmed;
+  if(st==='Shipped')return shipped;
+  if(st==='Delivered')return delivered;
+  if(st==='Cancelled')return cancelled;
+  return 'Hello *'+cust+'*!'+n+'Order *'+oid+'* status: *'+st+'*'+n+'Amount: ₹'+amt+n+n+'Thank you! — WAA Kids Closet 👑';
 }
-
 function renderCustomers(){
   var tbody=document.getElementById('cust-t');if(!tbody)return;
   var orders=gOrders();var map={};
