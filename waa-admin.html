@@ -402,6 +402,22 @@ try {
     databaseURL:"https://waa-kids-closet-b5351-default-rtdb.firebaseio.com"
   });
 } catch(e) { console.warn('Firebase:', e.message); }
+
+// Firebase REST API base URL
+var FB_URL = "https://waa-kids-closet-b5351-default-rtdb.firebaseio.com";
+
+function fbREST(path, data, method) {
+  method = method || 'PUT';
+  return fetch(FB_URL + path + '.json', {
+    method: method,
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(data)
+  });
+}
+
+function fbRESTGet(path) {
+  return fetch(FB_URL + path + '.json').then(function(r){ return r.json(); });
+}
 </script>
 <script>
 var PK='waa_v5_prods',CK='waa_v5_cats',ORDK='waa_v5_orders';
@@ -646,27 +662,26 @@ function renderCustomers(){
 }
 
 function fbSaveProd(prod){
-  try{
-    if(typeof firebase==='undefined'||!firebase.database){
-      toast('Saved to device only (Firebase not connected)','💾');return;
-    }
-    firebase.database().ref('products/'+prod.id).set(prod)
-      .then(function(){toast('✅ Saved to Firebase cloud!','☁️')})
-      .catch(function(e){toast('Firebase error: '+e.message,'⚠️');console.warn(e)});
-  }catch(e){toast('Save error: '+e.message,'⚠️');console.warn(e)}
+  // Save via REST API - most reliable method
+  fbREST('/products/'+prod.id, prod)
+    .then(function(r){
+      if(r.ok){ toast('✅ Saved to Firebase!','☁️'); }
+      else{ r.text().then(function(t){ toast('Firebase error: '+t,'⚠️'); }); }
+    })
+    .catch(function(e){ toast('Network error: '+e.message,'⚠️'); });
 }
+
 function fbSaveCat(cats){
-  try{
-    if(typeof firebase==='undefined'||!firebase.database){
-      toast('Categories saved to device only','💾');return;
-    }
-    var catObj={};
-    cats.forEach(function(c){catObj[c.id]=c});
-    firebase.database().ref('categories').set(catObj)
-      .then(function(){toast('✅ Categories saved to Firebase!','☁️')})
-      .catch(function(e){toast('Firebase error: '+e.message,'⚠️');console.warn(e)});
-  }catch(e){console.warn('fbSaveCat:',e)}
+  var catObj={};
+  cats.forEach(function(c){ catObj[c.id]=c; });
+  fbREST('/categories', catObj)
+    .then(function(r){
+      if(r.ok){ toast('✅ Categories saved to Firebase!','☁️'); }
+      else{ r.text().then(function(t){ toast('Firebase error: '+t,'⚠️'); }); }
+    })
+    .catch(function(e){ toast('Network error: '+e.message,'⚠️'); });
 }
+
 function fbDeleteProd(id){
   try{
     if(typeof firebase==='undefined'||!firebase.database)return;
@@ -675,40 +690,43 @@ function fbDeleteProd(id){
 }
 function fbSaveOrder(order){try{if(typeof firebase!=='undefined'&&firebase.database)firebase.database().ref('orders/'+order.id).set(order)}catch(e){}}
 function startAutoSync(){
-  try{
-    if(typeof firebase==='undefined'||!firebase.database)return;
-    // Sync products - overwrite local with Firebase data
-    firebase.database().ref('products').on('value',function(snap){
-      var data=snap.val();
-      if(data){
-        var prods=Object.values(data);
+  // Load products from Firebase on startup
+  fbRESTGet('/products').then(function(data){
+    if(data && typeof data === 'object'){
+      var prods = Object.values(data).filter(Boolean);
+      if(prods.length > 0){
         sP(prods);
         renderDashStats();
-        if(document.getElementById('as-products').classList.contains('on'))renderAdmProd();
+        toast('🔄 '+prods.length+' products synced from Firebase','☁️');
       }
-    });
-    // Sync categories
-    firebase.database().ref('categories').on('value',function(snap){
-      var data=snap.val();
-      if(data){
-        var cats=Object.values(data);
+    }
+  }).catch(function(e){ console.warn('Sync products:', e); });
+
+  // Load categories from Firebase on startup
+  fbRESTGet('/categories').then(function(data){
+    if(data && typeof data === 'object'){
+      var cats = Object.values(data).filter(Boolean);
+      if(cats.length > 0){
         sC(cats);
         populateCatSelect();
-        if(document.getElementById('as-categories').classList.contains('on'))renderCatT();
+        renderCatT();
       }
-    });
-    firebase.database().ref('orders').on('value',function(snap){var data=snap.val();if(data){var orders=Object.values(data).sort(function(a,b){return(b.createdAt||0)-(a.createdAt||0)});sOrders(orders);renderDashStats();updateOrderBadge()}});
-  }catch(e){}
+    }
+  }).catch(function(e){ console.warn('Sync categories:', e); });
+
+  // Load orders from Firebase on startup
+  fbRESTGet('/orders').then(function(data){
+    if(data && typeof data === 'object'){
+      var orders = Object.values(data).filter(Boolean)
+        .sort(function(a,b){ return (b.createdAt||0)-(a.createdAt||0); });
+      if(orders.length > 0){
+        sOrders(orders);
+        renderDashStats();
+        updateOrderBadge();
+      }
+    }
+  }).catch(function(e){ console.warn('Sync orders:', e); });
 }
-
-document.addEventListener('DOMContentLoaded',function(){
-  var cp=document.getElementById('p-colors');if(cp)cp.addEventListener('input',updateColorPreview);
-  // Update dashboard time
-  function updateTime(){var t=document.getElementById('dash-time');if(t){var now=new Date();t.textContent=now.toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}}
-  updateTime();
-  if(sessionStorage.getItem('waa_adm_logged')==='1'){showAdmin(sessionStorage.getItem('waa_adm_email')||ADMIN_EMAIL)}
-});
-
 </script>
 </body>
 </html>
