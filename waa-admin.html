@@ -443,15 +443,14 @@ function doLogin(){
   var email=document.getElementById('loginEmail').value.trim();
   var pwd=document.getElementById('loginPass').value;
   var err=document.getElementById('loginErr');
-  if(typeof firebase!=='undefined'&&firebase.auth){
-    firebase.auth().signInWithEmailAndPassword(email,pwd)
-      .then(function(){showAdmin(email)})
-      .catch(function(){tryLocal(email,pwd,err)});
-  } else {tryLocal(email,pwd,err)}
-}
-function tryLocal(email,pwd,err){
-  if(email===ADMIN_EMAIL&&pwd===ADMIN_PASS){showAdmin(email)}
-  else{err.classList.add('show')}
+  err.classList.remove('show');
+  if(email===ADMIN_EMAIL && pwd===ADMIN_PASS){
+    showAdmin(email);
+  } else {
+    err.classList.add('show');
+    document.getElementById('loginPass').value='';
+    document.getElementById('loginPass').focus();
+  }
 }
 function showAdmin(email){
   loggedIn=true;
