@@ -403,20 +403,62 @@ try {
   });
 } catch(e) { console.warn('Firebase:', e.message); }
 
-// Firebase REST API base URL
-var FB_URL = "https://waa-kids-closet-b5351-default-rtdb.firebaseio.com";
+// Firestore REST API
+var FS_BASE = "https://firestore.googleapis.com/v1/projects/waa-kids-closet-b5351/databases/(default)/documents";
+var FS_KEY  = "AIzaSyAhnZTl-1Wzda2t4dX9EX5MXKvXaIUuikk";
 
-function fbREST(path, data, method) {
-  method = method || 'PUT';
-  return fetch(FB_URL + path + '.json', {
-    method: method,
+// Convert JS object to Firestore fields format
+function toFS(obj) {
+  var fields = {};
+  Object.keys(obj).forEach(function(k) {
+    var v = obj[k];
+    if (v === null || v === undefined) fields[k] = {nullValue: null};
+    else if (typeof v === 'boolean') fields[k] = {booleanValue: v};
+    else if (typeof v === 'number')  fields[k] = {doubleValue: v};
+    else if (Array.isArray(v))       fields[k] = {stringValue: JSON.stringify(v)};
+    else if (typeof v === 'object')  fields[k] = {stringValue: JSON.stringify(v)};
+    else                             fields[k] = {stringValue: String(v)};
+  });
+  return {fields: fields};
+}
+
+// Convert Firestore document to JS object
+function fromFS(doc) {
+  if (!doc || !doc.fields) return null;
+  var obj = {};
+  Object.keys(doc.fields).forEach(function(k) {
+    var f = doc.fields[k];
+    if (f.stringValue !== undefined) {
+      // Try parse JSON arrays/objects
+      try { obj[k] = JSON.parse(f.stringValue); } catch(e) { obj[k] = f.stringValue; }
+    } else if (f.doubleValue !== undefined) obj[k] = f.doubleValue;
+    else if (f.integerValue !== undefined) obj[k] = parseInt(f.integerValue);
+    else if (f.booleanValue !== undefined) obj[k] = f.booleanValue;
+    else obj[k] = null;
+  });
+  return obj;
+}
+
+function fsSet(collection, docId, data) {
+  var url = FS_BASE+'/'+collection+'/'+docId+'?key='+FS_KEY;
+  return fetch(url, {
+    method: 'PATCH',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify(data)
+    body: JSON.stringify(toFS(data))
   });
 }
 
-function fbRESTGet(path) {
-  return fetch(FB_URL + path + '.json').then(function(r){ return r.json(); });
+function fsGetAll(collection) {
+  var url = FS_BASE+'/'+collection+'?key='+FS_KEY;
+  return fetch(url).then(function(r){ return r.json(); }).then(function(data){
+    if (!data.documents) return [];
+    return data.documents.map(fromFS).filter(Boolean);
+  });
+}
+
+function fsDelete(collection, docId) {
+  var url = FS_BASE+'/'+collection+'/'+docId+'?key='+FS_KEY;
+  return fetch(url, {method: 'DELETE'});
 }
 </script>
 <script>
@@ -626,7 +668,7 @@ function renderOrders(){
     return'<tr><td style="font-family:monospace;font-size:.72rem;color:var(--am)">'+(o.orderId||'#'+o.id)+'</td><td style="font-weight:700">'+(o.customer||'—')+'</td><td style="font-size:.73rem;color:var(--mu)">'+(o.phone||'—')+'</td><td style="font-size:.7rem;color:var(--mu);max-width:140px">'+(o.address||o.city||'—')+'</td><td style="font-size:.72rem;max-width:200px">'+items+'</td><td style="font-weight:800">₹'+(o.amount||0).toLocaleString()+'</td><td style="color:var(--mu);font-size:.73rem">'+(o.date||'—')+'</td><td><span class="sp '+(sm[o.status]||'sp-p')+'">'+(o.status||'Pending')+'</span></td><td><select class="as-sel" style="font-size:.72rem;padding:.2rem .4rem" onchange="updOrderStatus(\''+o.id+'\',this.value)">'+opts+'</select></td><td>'+waBtn+'</td></tr>';
   }).join('');
 }
-function updOrderStatus(id,status){var orders=gOrders();var o=orders.find(function(x){return x.id===id});if(o){o.status=status;sOrders(orders);renderDashStats();toast('Updated: '+status,'✅');fbSaveOrder(o)}}
+function updOrderStatus(id,status){var orders=gOrders();var o=orders.find(function(x){return x.id===id});if(o){o.status=status;sOrders(orders);renderDashStats();fbSaveOrder(o);toast('Updated: '+status,'✅')}}
 function exportOrdersCSV(){
   var orders=gOrders();if(!orders.length){toast('No orders','❌');return}
   var rows=['Order ID,Customer,Phone,Address,Items,Amount,Date,Status'];
@@ -662,68 +704,54 @@ function renderCustomers(){
 }
 
 function fbSaveProd(prod){
-  // Save via REST API - most reliable method
-  fbREST('/products/'+prod.id, prod)
+  fsSet('products', prod.id, prod)
     .then(function(r){
       if(r.ok){ toast('✅ Saved to Firebase!','☁️'); }
-      else{ r.text().then(function(t){ toast('Firebase error: '+t,'⚠️'); }); }
+      else{ r.json().then(function(e){ toast('Error: '+(e.error&&e.error.message||'unknown'),'⚠️'); }); }
     })
     .catch(function(e){ toast('Network error: '+e.message,'⚠️'); });
 }
 
 function fbSaveCat(cats){
-  var catObj={};
-  cats.forEach(function(c){ catObj[c.id]=c; });
-  fbREST('/categories', catObj)
-    .then(function(r){
-      if(r.ok){ toast('✅ Categories saved to Firebase!','☁️'); }
-      else{ r.text().then(function(t){ toast('Firebase error: '+t,'⚠️'); }); }
-    })
-    .catch(function(e){ toast('Network error: '+e.message,'⚠️'); });
+  // Save each category as a separate Firestore doc
+  var promises = cats.map(function(cat){
+    return fsSet('categories', cat.id, cat);
+  });
+  Promise.all(promises)
+    .then(function(){ toast('✅ Categories saved to Firebase!','☁️'); })
+    .catch(function(e){ toast('Error saving categories: '+e.message,'⚠️'); });
 }
 
 function fbDeleteProd(id){
-  try{
-    if(typeof firebase==='undefined'||!firebase.database)return;
-    firebase.database().ref('products/'+id).remove();
-  }catch(e){console.warn('fbDeleteProd:',e)}
+  fsDelete('products', id).catch(function(e){ console.warn('fbDeleteProd:', e); });
 }
 function fbSaveOrder(order){try{if(typeof firebase!=='undefined'&&firebase.database)firebase.database().ref('orders/'+order.id).set(order)}catch(e){}}
 function startAutoSync(){
-  // Load products from Firebase on startup
-  fbRESTGet('/products').then(function(data){
-    if(data && typeof data === 'object'){
-      var prods = Object.values(data).filter(Boolean);
-      if(prods.length > 0){
-        sP(prods);
-        renderDashStats();
-        toast('🔄 '+prods.length+' products synced from Firebase','☁️');
-      }
+  // Load products from Firestore
+  fsGetAll('products').then(function(prods){
+    if(prods.length > 0){
+      sP(prods);
+      renderDashStats();
+      toast('🔄 '+prods.length+' products synced','☁️');
     }
   }).catch(function(e){ console.warn('Sync products:', e); });
 
-  // Load categories from Firebase on startup
-  fbRESTGet('/categories').then(function(data){
-    if(data && typeof data === 'object'){
-      var cats = Object.values(data).filter(Boolean);
-      if(cats.length > 0){
-        sC(cats);
-        populateCatSelect();
-        renderCatT();
-      }
+  // Load categories from Firestore
+  fsGetAll('categories').then(function(cats){
+    if(cats.length > 0){
+      sC(cats);
+      populateCatSelect();
+      renderCatT();
     }
   }).catch(function(e){ console.warn('Sync categories:', e); });
 
-  // Load orders from Firebase on startup
-  fbRESTGet('/orders').then(function(data){
-    if(data && typeof data === 'object'){
-      var orders = Object.values(data).filter(Boolean)
-        .sort(function(a,b){ return (b.createdAt||0)-(a.createdAt||0); });
-      if(orders.length > 0){
-        sOrders(orders);
-        renderDashStats();
-        updateOrderBadge();
-      }
+  // Load orders from Firestore
+  fsGetAll('orders').then(function(orders){
+    if(orders.length > 0){
+      orders.sort(function(a,b){ return (b.createdAt||0)-(a.createdAt||0); });
+      sOrders(orders);
+      renderDashStats();
+      updateOrderBadge();
     }
   }).catch(function(e){ console.warn('Sync orders:', e); });
 }
