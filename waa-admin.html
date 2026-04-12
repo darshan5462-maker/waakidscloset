@@ -3,146 +3,224 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>WAA Kids Admin</title>
+<title>WAA Kids Admin Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --pk:#ff4fa0;--pk2:#e8358c;--pk-l:#fff0f7;--pk-m:#ffe0f0;
-  --yl:#ffd336;--yl2:#f5c800;--yl-l:#fffbea;
-  --gn:#4ecb71;--gn-l:#edfff3;
-  --bl:#5bb8ff;--bl-l:#edf6ff;
-  --pp:#a78bfa;--pp-l:#f5f3ff;
+  --pk:#ff4fa0;--pk2:#e8358c;--pk-l:rgba(255,79,160,.12);--pk-m:rgba(255,79,160,.2);
+  --yl:#ffd336;--yl2:#f5c800;--yl-l:rgba(255,211,54,.12);
+  --gn:#4ecb71;--gn-l:rgba(78,203,113,.12);
+  --bl:#5bb8ff;--bl-l:rgba(91,184,255,.12);
+  --pp:#a78bfa;--pp-l:rgba(167,139,250,.12);
   --or:#ff8c42;--rd:#ff5252;
-  --bg:#0d0b1f;--cd:#13102b;--br:#2a2550;
-  --tx:#ede9ff;--mu:#9188c8;--am:#c084fc;--aa:#a78bfa;
-  --at:#ffffff;--ab:#1a1635;
-  --rr:16px;--sh:0 4px 24px rgba(0,0,0,.4);
-  --fd:'Nunito',sans-serif
+  --bg:#080617;--cd:#100d24;--cd2:#160f2e;--br:#251e45;--br2:#2f2757;
+  --tx:#f0ebff;--mu:#8878b8;--am:#c084fc;--aa:#a78bfa;
+  --at:#ffffff;--ab:#0f0c22;
+  --rr:14px;--sh:0 8px 32px rgba(0,0,0,.5);
+  --sh2:0 2px 12px rgba(0,0,0,.3);
+  --fd:'Nunito',sans-serif;
+  --grad:linear-gradient(135deg,#ff4fa0,#e8358c)
 }
-body{background:var(--bg);color:var(--tx);font-family:var(--fd);min-height:100vh}
-/* NAV */
-.adm-tb{display:flex;align-items:center;gap:1rem;background:var(--cd);border-bottom:2px solid var(--br);padding:.75rem 1.5rem;position:sticky;top:0;z-index:100;flex-wrap:wrap}
-.adm-tb-logo{display:flex;align-items:center;gap:.6rem;margin-right:1rem}
-.adm-tb-logo img{width:36px;height:36px;border-radius:8px}
-.adm-tabs{display:flex;gap:.3rem;flex:1;flex-wrap:wrap}
-.adm-tab{background:none;border:none;color:var(--mu);font-size:.82rem;font-weight:700;padding:.5rem .9rem;border-radius:10px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:.4rem;font-family:var(--fd)}
-.adm-tab:hover{background:var(--br);color:var(--tx)}
-.adm-tab.on{background:var(--pk-l);color:var(--pk2);border-bottom:2px solid var(--pk)}
-.adm-tr{display:flex;align-items:center;gap:.75rem;margin-left:auto}
-.adm-act{background:linear-gradient(135deg,var(--pk),var(--pk2));color:#fff;border:none;border-radius:10px;padding:.45rem 1rem;font-size:.8rem;font-weight:700;cursor:pointer;font-family:var(--fd)}
-.av{width:34px;height:34px;border-radius:50%;background:var(--pk);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.95rem}
-/* BODY */
-.adm-body{padding:1.5rem;max-width:1400px;margin:0 auto}
-.asec{display:none}.asec.on{display:block}
-.adm-bc{font-size:.77rem;color:var(--am);font-weight:700;margin-bottom:1.25rem;text-transform:uppercase;letter-spacing:.05em}
-.adm-bc span{color:var(--tx)}
-/* CARDS */
-.acard{background:var(--cd);border-radius:var(--rr);border:2px solid var(--br);overflow:hidden;margin-bottom:1.2rem}
-.acard-hd{padding:1rem 1.2rem;border-bottom:2px solid var(--br);display:flex;align-items:center;justify-content:space-between}
-.acard-t{font-weight:800;font-size:.9rem}
-.acard-sub{font-size:.75rem;color:var(--mu)}
-.acard-bd{padding:1.2rem}
-/* STATS */
-.astats{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
-.astat{background:var(--cd);border:2px solid var(--br);border-radius:var(--rr);padding:1.2rem;position:relative;overflow:hidden}
-.astat-lbl{font-size:.72rem;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem}
-.astat-val{font-size:2rem;font-weight:900;font-family:var(--fd)}
-.astat-sub{font-size:.73rem;color:var(--gn);font-weight:700;margin-top:.2rem}
-.astat-ic{position:absolute;right:1rem;top:1rem;font-size:2rem;opacity:.6}
-/* TABLES */
-.at{width:100%;border-collapse:collapse;font-size:.8rem}
-.at th{background:var(--ab);color:var(--mu);font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;padding:.7rem 1rem;text-align:left;border-bottom:2px solid var(--br)}
-.at td{padding:.75rem 1rem;border-bottom:1px solid var(--br);vertical-align:top}
-.at tr:hover td{background:rgba(167,139,250,.05)}
-/* FORMS */
-.afin{width:100%;background:var(--ab);border:2px solid var(--br);border-radius:10px;padding:.6rem .9rem;color:var(--tx);font-size:.85rem;font-family:var(--fd);margin-bottom:.75rem;outline:none;transition:border .2s}
-.afin:focus{border-color:var(--pk)}
-.afl{font-size:.78rem;font-weight:700;color:var(--mu);margin-bottom:.3rem;display:block}
-.afta{min-height:80px;resize:vertical}
-.btn-pk{background:linear-gradient(135deg,var(--pk),var(--pk2));color:#fff;border:none;border-radius:10px;padding:.6rem 1.2rem;font-weight:700;cursor:pointer;font-family:var(--fd);font-size:.85rem;transition:opacity .2s}
-.btn-pk:hover{opacity:.9}
-.btn-ol{background:none;border:2px solid var(--br);color:var(--tx);border-radius:10px;padding:.55rem 1.1rem;font-weight:700;cursor:pointer;font-family:var(--fd);font-size:.85rem}
-.btn-pk-sm{background:var(--pk);color:#fff;border:none;border-radius:8px;padding:.3rem .7rem;font-size:.72rem;font-weight:700;cursor:pointer}
-.btn-full{width:100%}
-/* STATUS PILLS */
-.sp{padding:.25rem .65rem;border-radius:20px;font-size:.7rem;font-weight:800}
-.sp-pa{background:rgba(78,203,113,.15);color:var(--gn)}
-.sp-p{background:rgba(255,211,54,.15);color:var(--yl)}
-.sp-sh{background:rgba(91,184,255,.15);color:var(--bl)}
-.sp-de{background:rgba(78,203,113,.2);color:var(--gn)}
-.sp-oo{background:rgba(255,82,82,.15);color:var(--rd)}
-/* MISC */
-.abt-o{background:none;border:1.5px solid var(--br);color:var(--mu);border-radius:8px;padding:.3rem .7rem;font-size:.75rem;cursor:pointer;font-weight:700}
-.abt-o:hover{border-color:var(--pk);color:var(--pk)}
-.atbar{display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;flex-wrap:wrap}
-.as-inp{background:var(--ab);border:2px solid var(--br);border-radius:10px;padding:.5rem 1rem;color:var(--tx);font-size:.82rem;outline:none;font-family:var(--fd);min-width:200px}
-.as-inp:focus{border-color:var(--pk)}
-.as-sel{background:var(--ab);border:2px solid var(--br);border-radius:10px;padding:.5rem .75rem;color:var(--tx);font-size:.82rem;outline:none;cursor:pointer}
-.ch-bars{display:flex;align-items:flex-end;gap:4px;height:60px;margin-top:.5rem}
-.ch-bar{background:linear-gradient(to top,var(--pk),var(--pp));border-radius:4px 4px 0 0;flex:1;position:relative;min-height:8px}
-.ch-lbl{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:.6rem;color:var(--mu);white-space:nowrap}
-.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem}
-.sc{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.75rem}
-.sch{padding:.28rem .58rem;border:2px solid var(--br);border-radius:8px;font-size:.73rem;font-weight:700;cursor:pointer;color:var(--mu);transition:all .2s}
-.sch.act,.sch:hover{border-color:var(--pk);color:var(--pk);background:var(--pk-l)}
-.img-prev{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.5rem}
-.pv-img{width:70px;height:70px;object-fit:cover;border-radius:8px;border:2px solid var(--br)}
-.upzone{border:2px dashed var(--br);border-radius:12px;padding:1.5rem;text-align:center;cursor:pointer;transition:border .2s;position:relative}
-.upzone:hover{border-color:var(--pk)}
-.upzone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
-.wa-btn{border:none;border-radius:6px;padding:.25rem .5rem;font-size:.68rem;font-weight:700;cursor:pointer;width:100%;margin-bottom:2px}
-.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 30% 30%,#1a0a2e,var(--bg))}
-.login-box{background:var(--cd);border:2px solid var(--br);border-radius:20px;padding:2.5rem;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
-.login-title{font-family:var(--fd);font-size:1.8rem;text-align:center;margin-bottom:.3rem;color:var(--tx)}
-.login-sub{text-align:center;color:var(--mu);font-size:.8rem;font-weight:600;margin-bottom:2rem;text-transform:uppercase;letter-spacing:.1em}
-.login-err{background:rgba(255,82,82,.15);border:1.5px solid var(--rd);border-radius:10px;padding:.75rem;color:var(--rd);font-size:.82rem;font-weight:700;text-align:center;margin-top:.75rem;display:none}
+body{background:var(--bg);color:var(--tx);font-family:var(--fd);min-height:100vh;line-height:1.5}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--br2);border-radius:99px}
+
+/* ── LOGIN ── */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 20% 20%,rgba(167,139,250,.15) 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,rgba(255,79,160,.1) 0%,transparent 60%),var(--bg)}
+.login-box{background:var(--cd);border:1.5px solid var(--br2);border-radius:24px;padding:2.5rem;width:100%;max-width:420px;box-shadow:0 24px 64px rgba(0,0,0,.6),0 0 0 1px rgba(167,139,250,.1)}
+.login-logo-wrap{text-align:center;margin-bottom:1.5rem}
+.login-logo-wrap img{height:56px;border-radius:14px;box-shadow:0 8px 24px rgba(255,79,160,.3)}
+.login-title{font-size:1.9rem;font-weight:900;text-align:center;margin-bottom:.25rem}
+.login-sub{text-align:center;color:var(--mu);font-size:.78rem;font-weight:700;margin-bottom:2rem;letter-spacing:.12em;text-transform:uppercase}
+.login-field{margin-bottom:1rem}
+.login-field label{display:block;font-size:.75rem;font-weight:800;color:var(--mu);margin-bottom:.4rem;letter-spacing:.06em;text-transform:uppercase}
+.login-field input{width:100%;background:var(--ab);border:1.5px solid var(--br2);border-radius:10px;padding:.7rem 1rem;color:var(--tx);font-size:.9rem;font-family:var(--fd);outline:none;transition:border .2s,box-shadow .2s}
+.login-field input:focus{border-color:var(--pk);box-shadow:0 0 0 3px var(--pk-l)}
+.login-btn{width:100%;background:var(--grad);color:#fff;border:none;border-radius:12px;padding:.9rem;font-size:1rem;font-weight:800;cursor:pointer;font-family:var(--fd);box-shadow:0 8px 24px rgba(255,79,160,.4);transition:transform .15s,box-shadow .15s;margin-top:.5rem}
+.login-btn:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(255,79,160,.5)}
+.login-btn:active{transform:translateY(0)}
+.login-err{background:rgba(255,82,82,.12);border:1.5px solid rgba(255,82,82,.4);border-radius:10px;padding:.65rem 1rem;color:#ff7070;font-size:.83rem;font-weight:700;text-align:center;margin-top:.75rem;display:none}
 .login-err.show{display:block}
+.login-footer{text-align:center;margin-top:1.25rem;font-size:.73rem;color:var(--mu)}
+
+/* ── TOP NAV ── */
+.adm-tb{display:flex;align-items:center;gap:.5rem;background:var(--cd);border-bottom:1.5px solid var(--br);padding:.65rem 1.5rem;position:sticky;top:0;z-index:100;flex-wrap:wrap;backdrop-filter:blur(12px)}
+.adm-tb-logo{display:flex;align-items:center;gap:.6rem;margin-right:.75rem;min-width:fit-content}
+.adm-tb-logo img{width:34px;height:34px;border-radius:10px}
+.adm-tb-logo-name{font-family:var(--fd);font-size:.95rem;font-weight:900;color:var(--at)}
+.adm-tb-logo-sub{font-size:.6rem;color:var(--mu);font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.adm-tabs{display:flex;gap:.2rem;flex:1;flex-wrap:wrap}
+.adm-tab{background:none;border:none;color:var(--mu);font-size:.79rem;font-weight:700;padding:.48rem .85rem;border-radius:10px;cursor:pointer;transition:all .18s;display:flex;align-items:center;gap:.35rem;font-family:var(--fd);white-space:nowrap;border-bottom:2px solid transparent}
+.adm-tab:hover{background:var(--br);color:var(--tx)}
+.adm-tab.on{background:var(--pk-l);color:var(--pk);border-bottom-color:var(--pk)}
+.adm-tr{display:flex;align-items:center;gap:.6rem;margin-left:auto}
+.adm-act{background:var(--grad);color:#fff;border:none;border-radius:10px;padding:.42rem .9rem;font-size:.78rem;font-weight:800;cursor:pointer;font-family:var(--fd);transition:opacity .2s}
+.adm-act:hover{opacity:.9}
+.adm-logout{background:none;border:1.5px solid var(--br2);color:var(--mu);border-radius:10px;padding:.42rem .85rem;font-size:.78rem;font-weight:700;cursor:pointer;font-family:var(--fd);transition:all .2s}
+.adm-logout:hover{border-color:var(--rd);color:var(--rd)}
+.av-pill{display:flex;align-items:center;gap:.45rem;background:var(--br);border-radius:24px;padding:.3rem .6rem .3rem .3rem}
+.av{width:28px;height:28px;border-radius:50%;background:var(--grad);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.8rem}
+.av-name{font-size:.78rem;font-weight:700;color:var(--tx)}
+.ord-badge{background:var(--pk);color:#fff;border-radius:10px;padding:.08rem .38rem;font-size:.66rem;font-weight:800;margin-left:.2rem;vertical-align:middle}
+
+/* ── BODY ── */
+.adm-body{padding:1.5rem;max-width:1440px;margin:0 auto}
+.asec{display:none}.asec.on{display:block;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.adm-bc{font-size:.73rem;color:var(--mu);font-weight:700;margin-bottom:1.5rem;letter-spacing:.04em}
+.adm-bc span{color:var(--am)}
+
+/* ── STAT CARDS ── */
+.astats{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
+.astat{border-radius:var(--rr);padding:1.3rem;position:relative;overflow:hidden;border:1.5px solid var(--br2)}
+.astat-1{background:linear-gradient(135deg,#1a0e2e,#2d1055);border-color:rgba(167,139,250,.3)}
+.astat-2{background:linear-gradient(135deg,#1a0e22,#2d1040);border-color:rgba(255,79,160,.3)}
+.astat-3{background:linear-gradient(135deg,#0e1a20,#103030);border-color:rgba(78,203,113,.3)}
+.astat-4{background:linear-gradient(135deg,#0e1420,#103050);border-color:rgba(91,184,255,.3)}
+.astat-lbl{font-size:.68rem;font-weight:800;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem}
+.astat-val{font-size:2.1rem;font-weight:900;font-family:var(--fd);line-height:1}
+.astat-sub{font-size:.71rem;font-weight:700;margin-top:.35rem}
+.astat-ic{position:absolute;right:1rem;top:1rem;font-size:2.2rem;opacity:.4}
+.astat-bar{height:3px;border-radius:99px;margin-top:.75rem;background:var(--br)}
+.astat-bar-fill{height:100%;border-radius:99px}
+
+/* ── CARDS ── */
+.acard{background:var(--cd);border-radius:var(--rr);border:1.5px solid var(--br);overflow:hidden;margin-bottom:1.2rem}
+.acard:hover{border-color:var(--br2);box-shadow:var(--sh2)}
+.acard-hd{padding:.9rem 1.2rem;border-bottom:1.5px solid var(--br);display:flex;align-items:center;justify-content:space-between;gap:.5rem}
+.acard-t{font-weight:800;font-size:.88rem;color:var(--tx)}
+.acard-sub{font-size:.73rem;color:var(--mu)}
+.acard-bd{padding:1.1rem}
+
+/* ── FORMS ── */
+.afin{width:100%;background:var(--ab);border:1.5px solid var(--br);border-radius:10px;padding:.6rem .9rem;color:var(--tx);font-size:.84rem;font-family:var(--fd);margin-bottom:.7rem;outline:none;transition:border .2s,box-shadow .2s}
+.afin:focus{border-color:var(--pk);box-shadow:0 0 0 3px var(--pk-l)}
+.afl{font-size:.72rem;font-weight:800;color:var(--mu);margin-bottom:.3rem;display:block;text-transform:uppercase;letter-spacing:.05em}
+.afta{min-height:80px;resize:vertical}
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+
+/* ── BUTTONS ── */
+.btn-pk{background:var(--grad);color:#fff;border:none;border-radius:10px;padding:.6rem 1.2rem;font-weight:800;cursor:pointer;font-family:var(--fd);font-size:.84rem;transition:opacity .2s,transform .15s;box-shadow:0 4px 16px rgba(255,79,160,.3)}
+.btn-pk:hover{opacity:.9;transform:translateY(-1px)}
+.btn-ol{background:none;border:1.5px solid var(--br2);color:var(--tx);border-radius:10px;padding:.58rem 1.1rem;font-weight:700;cursor:pointer;font-family:var(--fd);font-size:.84rem;transition:border .2s}
+.btn-ol:hover{border-color:var(--pk);color:var(--pk)}
+.btn-pk-sm{background:var(--grad);color:#fff;border:none;border-radius:8px;padding:.28rem .65rem;font-size:.72rem;font-weight:800;cursor:pointer;box-shadow:0 2px 8px rgba(255,79,160,.3)}
+.btn-full{width:100%}
+
+/* ── STATUS PILLS ── */
+.sp{padding:.22rem .6rem;border-radius:20px;font-size:.69rem;font-weight:800;letter-spacing:.03em}
+.sp-pa{background:var(--gn-l);color:var(--gn);border:1px solid rgba(78,203,113,.3)}
+.sp-p{background:var(--yl-l);color:var(--yl2);border:1px solid rgba(255,211,54,.3)}
+.sp-sh{background:var(--bl-l);color:var(--bl);border:1px solid rgba(91,184,255,.3)}
+.sp-de{background:var(--gn-l);color:var(--gn);border:1px solid rgba(78,203,113,.3)}
+.sp-oo{background:rgba(255,82,82,.12);color:var(--rd);border:1px solid rgba(255,82,82,.3)}
+
+/* ── TABLES ── */
+.at{width:100%;border-collapse:collapse;font-size:.8rem}
+.at th{background:var(--ab);color:var(--mu);font-size:.69rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;padding:.65rem 1rem;text-align:left;border-bottom:1.5px solid var(--br)}
+.at td{padding:.7rem 1rem;border-bottom:1px solid var(--br);vertical-align:top}
+.at tr:last-child td{border-bottom:none}
+.at tr:hover td{background:rgba(167,139,250,.04)}
+
+/* ── MISC UI ── */
+.abt-o{background:none;border:1.5px solid var(--br);color:var(--mu);border-radius:8px;padding:.28rem .65rem;font-size:.73rem;cursor:pointer;font-weight:700;transition:all .15s}
+.abt-o:hover{border-color:var(--pk);color:var(--pk)}
+.atbar{display:flex;align-items:center;gap:.65rem;margin-bottom:1rem;flex-wrap:wrap}
+.as-inp{background:var(--ab);border:1.5px solid var(--br);border-radius:10px;padding:.48rem .9rem;color:var(--tx);font-size:.82rem;outline:none;font-family:var(--fd);min-width:200px;transition:border .2s}
+.as-inp:focus{border-color:var(--pk)}
+.as-sel{background:var(--ab);border:1.5px solid var(--br);border-radius:10px;padding:.48rem .75rem;color:var(--tx);font-size:.82rem;outline:none;cursor:pointer;transition:border .2s}
+.as-sel:focus{border-color:var(--pk)}
+
+/* ── CHART ── */
+.ch-bars{display:flex;align-items:flex-end;gap:5px;height:64px;margin-top:.75rem;padding-bottom:20px}
+.ch-bar{background:linear-gradient(to top,var(--pk),var(--pp));border-radius:4px 4px 0 0;flex:1;position:relative;min-height:6px;transition:opacity .2s}
+.ch-bar:hover{opacity:.8}
+.ch-lbl{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:.6rem;color:var(--mu);white-space:nowrap}
+
+/* ── PRODUCT GRID ── */
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem}
+@media(max-width:900px){.dgrid{grid-template-columns:1fr}.astats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.astats{grid-template-columns:1fr}.adm-tabs{gap:.15rem}.adm-tab{font-size:.72rem;padding:.4rem .55rem}}
+
+/* ── IMAGE UPLOAD ── */
+.upzone{border:2px dashed var(--br2);border-radius:12px;padding:1.5rem;text-align:center;cursor:pointer;transition:all .2s;position:relative;background:var(--ab)}
+.upzone:hover{border-color:var(--pk);background:var(--pk-l)}
+.upzone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.img-prev{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.75rem}
+.pv-img{width:68px;height:72px;object-fit:cover;border-radius:10px;border:2px solid var(--br)}
 .color-preview{display:flex;gap:.4rem;flex-wrap:wrap;min-height:24px;margin-bottom:.5rem}
-.cp-dot{width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.2)}
-@media(max-width:900px){.astats{grid-template-columns:repeat(2,1fr)}.dgrid{grid-template-columns:1fr}}
-@media(max-width:600px){.astats{grid-template-columns:1fr}.adm-tabs{gap:.2rem}.adm-tab{font-size:.74rem;padding:.4rem .6rem}}
+.cp-dot{width:24px;height:24px;border-radius:50%;border:2px solid rgba(255,255,255,.15);cursor:pointer;transition:transform .2s}
+.cp-dot:hover{transform:scale(1.2)}
+
+/* ── SIZE CHIPS ── */
+.sc{display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:.7rem}
+.sch{padding:.25rem .55rem;border:1.5px solid var(--br2);border-radius:8px;font-size:.72rem;font-weight:700;cursor:pointer;color:var(--mu);transition:all .15s}
+.sch.act,.sch:hover{border-color:var(--pk);color:var(--pk);background:var(--pk-l)}
+
+/* ── WA BUTTONS ── */
+.wa-btn{border:none;border-radius:7px;padding:.28rem .5rem;font-size:.68rem;font-weight:800;cursor:pointer;width:100%;margin-bottom:3px;font-family:var(--fd);transition:opacity .15s}
+.wa-btn:hover{opacity:.85}
+
+/* ── TOAST ── */
+.waa-toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--cd2);border:1.5px solid var(--br2);border-radius:14px;padding:.8rem 1.25rem;font-weight:700;font-size:.84rem;z-index:9999;color:var(--tx);box-shadow:var(--sh);display:flex;align-items:center;gap:.5rem;max-width:320px;animation:toastIn .25s ease}
+@keyframes toastIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+/* ── SECTION HEADER ── */
+.sec-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;gap:1rem}
+.sec-hd-t{font-family:var(--fd);font-size:1.35rem;font-weight:900}
+.sec-hd-t span{color:var(--pk)}
+
+/* ── PRODUCT CARD (list) ── */
+.prod-img-cell img{border-radius:10px;border:1.5px solid var(--br)}
+.badge-pill{padding:.15rem .5rem;border-radius:6px;font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.badge-new{background:var(--bl-l);color:var(--bl)}
+.badge-sale{background:var(--pk-l);color:var(--pk)}
+.badge-hot{background:var(--yl-l);color:var(--yl2)}
+.badge-bestseller{background:var(--gn-l);color:var(--gn)}
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
+<!-- ═══════ LOGIN ═══════ -->
 <div id="loginPage" class="login-wrap">
   <div class="login-box">
-    <div style="text-align:center;margin-bottom:1rem"><img src="logo.png" style="height:50px;border-radius:10px" onerror="this.style.display='none'"></div>
+    <div class="login-logo-wrap"><img src="logo.png" alt="WAA Kids" onerror="this.style.display='none'"></div>
     <div class="login-title">WAA <span style="color:var(--pk)">Kids</span> Admin</div>
-    <div class="login-sub">Admin Panel · Secure Login</div>
-    <label class="afl">Email Address</label>
-    <input class="afin" type="email" id="loginEmail" placeholder="admin@waakidscloset.in" value="admin@waakidscloset.in">
-    <label class="afl">Password</label>
-    <input class="afin" type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
-    <button class="btn-pk btn-full" style="padding:.85rem;font-size:1rem;border-radius:12px;margin-top:.5rem" onclick="doLogin()">Sign In</button>
-    <div class="login-err" id="loginErr">Wrong email or password</div>
-    <div style="text-align:center;margin-top:1rem;font-size:.75rem;color:var(--mu)">🔒 Protected · WAA Kids Closet Admin</div>
+    <div class="login-sub">Secure Admin Panel</div>
+    <div class="login-field"><label>Email Address</label><input type="email" id="loginEmail" placeholder="admin@waakidscloset.in" value="admin@waakidscloset.in"></div>
+    <div class="login-field"><label>Password</label><input type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <button class="login-btn" onclick="doLogin()">🔐 Sign In to Admin</button>
+    <div class="login-err" id="loginErr">❌ Wrong email or password</div>
+    <div class="login-footer">🔒 Protected · WAA Kids Closet Admin Panel<br><small style="font-size:.68rem">© 2025 WAA Kids Closet · Harihar, Karnataka</small></div>
   </div>
 </div>
 
-<!-- ADMIN PANEL -->
+<!-- ═══════ ADMIN PANEL ═══════ -->
 <div id="adminPage" style="display:none">
 
 <!-- TOP NAV -->
 <div class="adm-tb">
   <div class="adm-tb-logo">
     <img src="logo.png" onerror="this.style.display='none'">
-    <div><div style="font-family:var(--fd);font-size:1rem;color:var(--at);font-weight:800">WAA <span style="color:var(--aa)">Kids</span></div><div style="font-size:.65rem;color:var(--mu);font-weight:700">ADMIN PANEL</div></div>
+    <div><div class="adm-tb-logo-name">WAA <span style="color:var(--pk)">Kids</span></div><div class="adm-tb-logo-sub">Admin Panel</div></div>
   </div>
   <div class="adm-tabs">
     <button class="adm-tab on" data-sec="dashboard" onclick="admTab('dashboard',this)">◆ Dashboard</button>
-    <button class="adm-tab" data-sec="products" onclick="admTab('products',this)">▲ Products</button>
-    <button class="adm-tab" data-sec="add-product" onclick="admTab('add-product',this)">+ Add Product</button>
-    <button class="adm-tab" data-sec="categories" onclick="admTab('categories',this)">◈ Categories</button>
-    <button class="adm-tab" data-sec="orders" onclick="admTab('orders',this)">📦 Orders <span id="ordBadge" style="background:var(--pk);color:#fff;border-radius:10px;padding:.1rem .4rem;font-size:.68rem;margin-left:.2rem"></span></button>
-    <button class="adm-tab" data-sec="customers" onclick="admTab('customers',this)">👤 Customers</button>
+    <button class="adm-tab" data-sec="products" onclick="admTab('products',this)">👗 Products</button>
+    <button class="adm-tab" data-sec="add-product" onclick="admTab('add-product',this)">✦ Add Product</button>
+    <button class="adm-tab" data-sec="categories" onclick="admTab('categories',this)">🏷️ Categories</button>
+    <button class="adm-tab" data-sec="orders" onclick="admTab('orders',this)">📦 Orders <span class="ord-badge" id="ordBadge"></span></button>
+    <button class="adm-tab" data-sec="customers" onclick="admTab('customers',this)">👥 Customers</button>
   </div>
   <div class="adm-tr">
     <button class="adm-act" onclick="window.open('index.html','_blank')">🏪 View Store</button>
-    <button class="abt-o" onclick="doLogout()">Logout</button>
-    <div class="av" id="adminAv">A</div>
-    <span style="font-size:.8rem;color:var(--mu);font-weight:700" id="adminName">admin</span>
+    <button class="adm-logout" onclick="doLogout()">↩ Logout</button>
+    <div class="av-pill"><div class="av" id="adminAv">A</div><span class="av-name" id="adminName">admin</span></div>
   </div>
 </div>
 
@@ -150,104 +228,133 @@ body{background:var(--bg);color:var(--tx);font-family:var(--fd);min-height:100vh
 
 <!-- DASHBOARD -->
 <div class="asec on" id="as-dashboard">
-  <div class="adm-bc">WAA Kids Closet / <span>Dashboard</span></div>
+  <div class="sec-hd"><div class="sec-hd-t">Dashboard <span>Overview</span></div><span style="font-size:.78rem;color:var(--mu);font-weight:600" id="dash-time"></span></div>
   <div class="astats">
-    <div class="astat"><div class="astat-lbl">Total Orders</div><div class="astat-val" id="d-tot-ord">0</div><div class="astat-sub">0 orders today</div><div class="astat-ic">📦</div></div>
-    <div class="astat"><div class="astat-lbl">Revenue (MTD)</div><div class="astat-val" id="d-rev">₹0</div><div class="astat-sub" style="color:var(--gn)">↑ 22% vs last month</div><div class="astat-ic">💰</div></div>
-    <div class="astat"><div class="astat-lbl">Active Products</div><div class="astat-val" id="d-prods">0</div><div class="astat-sub" id="d-low-stock" style="color:var(--yl)"></div><div class="astat-ic">👗</div></div>
-    <div class="astat"><div class="astat-lbl">Customers</div><div class="astat-val">8,421</div><div class="astat-sub">↑ 287 new this week</div><div class="astat-ic">👥</div></div>
+    <div class="astat astat-1"><div class="astat-lbl">Total Orders</div><div class="astat-val" id="d-tot-ord">0</div><div class="astat-sub" style="color:var(--pp)">All time orders</div><div class="astat-ic">📦</div><div class="astat-bar"><div class="astat-bar-fill" style="width:60%;background:var(--pp)"></div></div></div>
+    <div class="astat astat-2"><div class="astat-lbl">Revenue (All Time)</div><div class="astat-val" id="d-rev">₹0</div><div class="astat-sub" style="color:var(--pk)">↑ Growing steadily</div><div class="astat-ic">💰</div><div class="astat-bar"><div class="astat-bar-fill" style="width:75%;background:var(--pk)"></div></div></div>
+    <div class="astat astat-3"><div class="astat-lbl">Active Products</div><div class="astat-val" id="d-prods">0</div><div class="astat-sub" id="d-low-stock" style="color:var(--gn)">In your store</div><div class="astat-ic">👗</div><div class="astat-bar"><div class="astat-bar-fill" style="width:50%;background:var(--gn)"></div></div></div>
+    <div class="astat astat-4"><div class="astat-lbl">Happy Families</div><div class="astat-val">8,421</div><div class="astat-sub" style="color:var(--bl)">↑ 287 new this week</div><div class="astat-ic">👨‍👩‍👧</div><div class="astat-bar"><div class="astat-bar-fill" style="width:85%;background:var(--bl)"></div></div></div>
   </div>
   <div class="dgrid">
-    <div class="acard"><div class="acard-hd"><span class="acard-t">Revenue — Last 7 Days</span><span class="acard-sub" id="d-weekly-rev">₹0 this week</span></div>
-      <div class="acard-bd"><div class="ch-bars" id="d-chart"><div class="ch-bar" style="height:30%"><span class="ch-lbl">Mon</span></div><div class="ch-bar" style="height:45%"><span class="ch-lbl">Tue</span></div><div class="ch-bar" style="height:25%"><span class="ch-lbl">Wed</span></div><div class="ch-bar" style="height:60%"><span class="ch-lbl">Thu</span></div><div class="ch-bar" style="height:40%"><span class="ch-lbl">Fri</span></div><div class="ch-bar" style="height:75%"><span class="ch-lbl">Sat</span></div><div class="ch-bar" style="height:55%"><span class="ch-lbl">Sun</span></div></div></div>
+    <div class="acard">
+      <div class="acard-hd"><span class="acard-t">📊 Revenue — Last 7 Days</span><span class="acard-sub" id="d-weekly-rev">Loading…</span></div>
+      <div class="acard-bd"><div class="ch-bars" id="d-chart"><div class="ch-bar" style="height:30%"><span class="ch-lbl">Mon</span></div><div class="ch-bar" style="height:50%"><span class="ch-lbl">Tue</span></div><div class="ch-bar" style="height:35%"><span class="ch-lbl">Wed</span></div><div class="ch-bar" style="height:70%"><span class="ch-lbl">Thu</span></div><div class="ch-bar" style="height:45%"><span class="ch-lbl">Fri</span></div><div class="ch-bar" style="height:85%"><span class="ch-lbl">Sat</span></div><div class="ch-bar" style="height:60%"><span class="ch-lbl">Sun</span></div></div></div>
     </div>
-    <div class="acard"><div class="acard-hd"><span class="acard-t">Order Status</span></div>
-      <div class="acard-bd" id="d-ord-status">
-        <div style="margin-bottom:.5rem;font-size:.82rem"><span style="color:var(--yl);font-weight:800">Pending</span><span id="ds-pending" style="float:right;font-weight:900">0</span></div>
-        <div style="margin-bottom:.5rem;font-size:.82rem"><span style="color:var(--bl);font-weight:800">Paid</span><span id="ds-paid" style="float:right;font-weight:900">0</span></div>
-        <div style="margin-bottom:.5rem;font-size:.82rem"><span style="color:var(--pp);font-weight:800">Shipped</span><span id="ds-shipped" style="float:right;font-weight:900">0</span></div>
-        <div style="font-size:.82rem"><span style="color:var(--gn);font-weight:800">Delivered</span><span id="ds-delivered" style="float:right;font-weight:900">0</span></div>
+    <div class="acard">
+      <div class="acard-hd"><span class="acard-t">📋 Order Status Breakdown</span></div>
+      <div class="acard-bd">
+        <div style="display:flex;flex-direction:column;gap:.6rem">
+          <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:.82rem;font-weight:700;color:var(--yl2)">⏳ Pending</span><span id="ds-pending" style="font-weight:900;font-size:1.1rem">0</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:.82rem;font-weight:700;color:var(--bl)">💳 Paid</span><span id="ds-paid" style="font-weight:900;font-size:1.1rem">0</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:.82rem;font-weight:700;color:var(--pp)">🚚 Shipped</span><span id="ds-shipped" style="font-weight:900;font-size:1.1rem">0</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:.82rem;font-weight:700;color:var(--gn)">🎉 Delivered</span><span id="ds-delivered" style="font-weight:900;font-size:1.1rem">0</span></div>
+        </div>
       </div>
     </div>
   </div>
   <div class="dgrid">
-    <div class="acard"><div class="acard-hd"><span class="acard-t">Recent Orders</span><button class="abt-o" onclick="admTab('orders',document.querySelector('[data-sec=orders]'))">View All →</button></div>
+    <div class="acard">
+      <div class="acard-hd"><span class="acard-t">🕐 Recent Orders</span><button class="abt-o" onclick="admTab('orders',document.querySelector('[data-sec=orders]'))">View All →</button></div>
       <div class="acard-bd" style="overflow-x:auto"><table class="at"><thead><tr><th>Order ID</th><th>Customer</th><th>Amount</th><th>Status</th></tr></thead><tbody id="d-orders-t"></tbody></table></div>
     </div>
-    <div class="acard"><div class="acard-hd"><span class="acard-t">Top Products</span></div><div class="acard-bd" id="d-top-p"></div></div>
+    <div class="acard">
+      <div class="acard-hd"><span class="acard-t">🏆 Top Products</span></div>
+      <div class="acard-bd" id="d-top-p"></div>
+    </div>
   </div>
 </div>
 
 <!-- PRODUCTS -->
 <div class="asec" id="as-products">
-  <div class="adm-bc">WAA Kids Closet / <span>Products</span></div>
+  <div class="sec-hd"><div class="sec-hd-t">All <span>Products</span></div><button class="btn-pk" onclick="admTab('add-product',document.querySelector('[data-sec=add-product]'))">✦ Add New Product</button></div>
   <div class="atbar">
-    <input class="as-inp" placeholder="🔍 Search products…" oninput="renderAdmProd(this.value)">
+    <input class="as-inp" placeholder="🔍 Search products by name…" oninput="renderAdmProd(this.value)">
     <select class="as-sel" onchange="renderAdmProd()"><option>All Status</option><option>Active</option><option>Draft</option><option>Out of Stock</option></select>
-    <button class="btn-pk" onclick="admTab('add-product',document.querySelector('[data-sec=add-product]'))">+ Add New</button>
   </div>
   <div class="acard" style="overflow-x:auto">
-    <table class="at"><thead><tr><th>Image</th><th>Name</th><th>Category</th><th>Price</th><th>Status</th><th>Actions</th></tr></thead>
+    <table class="at"><thead><tr><th>Image</th><th>Name</th><th>Category</th><th>Price</th><th>Badge</th><th>Status</th><th>Actions</th></tr></thead>
     <tbody id="prod-t"></tbody></table>
   </div>
 </div>
 
 <!-- ADD PRODUCT -->
 <div class="asec" id="as-add-product">
-  <div class="adm-bc">WAA Kids Closet / <span id="add-prod-bc">Add Product</span></div>
+  <div class="sec-hd"><div class="sec-hd-t" id="add-prod-bc">Add <span>Product</span></div></div>
   <div class="dgrid">
     <div>
-      <div class="acard"><div class="acard-hd"><span class="acard-t">Product Details</span></div><div class="acard-bd">
+      <div class="acard"><div class="acard-hd"><span class="acard-t">✏️ Product Details</span></div><div class="acard-bd">
         <input type="hidden" id="edit-id">
         <label class="afl">Product Name *</label><input class="afin" type="text" id="p-name" placeholder="e.g. Floral Smock Dress">
-        <label class="afl">Category *</label><select class="afin" id="p-cat"></select>
-        <label class="afl">Brand</label><input class="afin" type="text" id="p-brand" placeholder="e.g. Babyhug, Zara">
-        <label class="afl">Description</label><textarea class="afin afta" id="p-desc" placeholder="Product description…"></textarea>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+        <div class="fg2">
+          <div><label class="afl">Category *</label><select class="afin" id="p-cat"></select></div>
+          <div><label class="afl">Brand</label><input class="afin" type="text" id="p-brand" placeholder="Babyhug, Zara…"></div>
+        </div>
+        <label class="afl">Description</label><textarea class="afin afta" id="p-desc" placeholder="Describe the product…"></textarea>
+        <div class="fg2">
           <div><label class="afl">Price (₹) *</label><input class="afin" type="number" id="p-price" placeholder="449"></div>
           <div><label class="afl">Original Price (₹)</label><input class="afin" type="number" id="p-orig" placeholder="699"></div>
         </div>
-        <label class="afl">Sizes (comma separated)</label><input class="afin" type="text" id="p-sizes" placeholder="2Y,3Y,4Y,5Y,6Y">
-        <label class="afl">Color Options (hex codes, comma separated)</label>
+        <div class="fg2">
+          <div><label class="afl">Age Group</label><select class="afin" id="p-age"><option value="">All Ages</option><option value="0-2">0–2 Years</option><option value="2-5">2–5 Years</option><option value="5-10">5–10 Years</option><option value="10-14">10–14 Years</option></select></div>
+          <div><label class="afl">Badge</label><select class="afin" id="p-badge"><option value="">None</option><option value="new">🆕 New</option><option value="sale">🏷️ Sale</option><option value="hot">🔥 Hot</option><option value="bestseller">⭐ Bestseller</option></select></div>
+        </div>
+        <label class="afl">Sizes (comma separated)</label><input class="afin" type="text" id="p-sizes" placeholder="2Y, 3Y, 4Y, 5Y, 6Y">
+        <label class="afl">Color Options (hex codes)</label>
         <input class="afin" type="text" id="p-colors" placeholder="#ff8a80, #80d8ff, #b9f6ca">
         <div class="color-preview" id="color-preview"></div>
-        <label class="afl">Age Group</label><select class="afin" id="p-age"><option value="">All Ages</option><option value="0-2">0–2 Years</option><option value="2-5">2–5 Years</option><option value="5-10">5–10 Years</option><option value="10-14">10–14 Years</option></select>
-        <label class="afl">Emoji Icon</label><input class="afin" type="text" id="p-emoji" placeholder="👗" maxlength="4">
-        <label class="afl">Badge</label><select class="afin" id="p-badge"><option value="">None</option><option value="new">New</option><option value="sale">Sale</option><option value="hot">Hot</option><option value="bestseller">Bestseller</option></select>
+        <div class="fg2">
+          <div><label class="afl">Emoji Icon</label><input class="afin" type="text" id="p-emoji" placeholder="👗" maxlength="4"></div>
+          <div><label class="afl">SEO Title</label><input class="afin" type="text" id="p-mt" placeholder="Kids Dress…"></div>
+        </div>
+        <label class="afl">SEO Description</label><textarea class="afin" style="min-height:55px" id="p-md" placeholder="Beautiful dress…"></textarea>
       </div></div>
-      <div class="acard"><div class="acard-hd"><span class="acard-t">Product Images 📸</span></div><div class="acard-bd">
-        <div class="upzone"><input type="file" id="img-inp" multiple accept="image/*" onchange="handleImgSel(event)"><div style="font-size:2rem">📸</div><div style="font-size:.85rem;font-weight:700;margin-top:.4rem">Click to upload photos</div><div style="font-size:.75rem;color:var(--mu)">PNG, JPG, WebP · Max 8 images</div></div>
+
+      <div class="acard"><div class="acard-hd"><span class="acard-t">📸 Product Images</span><span class="acard-sub">Max 8 images</span></div><div class="acard-bd">
+        <div class="upzone"><input type="file" id="img-inp" multiple accept="image/*" onchange="handleImgSel(event)">
+          <div style="font-size:2.2rem;margin-bottom:.4rem">📷</div>
+          <div style="font-weight:800;font-size:.85rem">Click or drag to upload photos</div>
+          <div style="font-size:.75rem;color:var(--mu);margin-top:.25rem">PNG, JPG, WebP · Auto compressed</div>
+        </div>
         <div class="img-prev" id="img-prev"></div>
       </div></div>
     </div>
+
     <div>
-      <div class="acard"><div class="acard-hd"><span class="acard-t">Status &amp; Visibility</span></div><div class="acard-bd">
+      <div class="acard"><div class="acard-hd"><span class="acard-t">⚙️ Status &amp; Visibility</span></div><div class="acard-bd">
         <label class="afl">Product Status</label><select class="afin" id="p-status"><option>Active</option><option>Draft</option><option>Out of Stock</option></select>
-        <label class="afl">Featured on Homepage?</label><select class="afin" id="p-featured"><option value="no">No</option><option value="yes">Yes</option></select>
-        <label class="afl">SEO Title</label><input class="afin" type="text" id="p-mt" placeholder="Kids Dress…">
-        <label class="afl">SEO Description</label><textarea class="afin" style="min-height:60px" id="p-md" placeholder="Beautiful dress…"></textarea>
+        <label class="afl">Featured on Homepage?</label><select class="afin" id="p-featured"><option value="no">No</option><option value="yes">Yes — Show on Homepage</option></select>
       </div></div>
-      <div style="display:flex;gap:.75rem;margin-bottom:1rem">
-        <button class="btn-pk btn-full" onclick="saveProd()"><span id="save-txt">💾 Save Product</span></button>
-        <button class="btn-ol" onclick="saveDraft()">Draft</button>
+
+      <div class="acard" style="border:1.5px solid var(--pk-m);background:linear-gradient(135deg,rgba(255,79,160,.05),var(--cd))">
+        <div class="acard-hd" style="border-color:var(--pk-m)"><span class="acard-t" style="color:var(--pk)">💾 Save Product</span></div>
+        <div class="acard-bd">
+          <div style="display:flex;gap:.75rem;margin-bottom:.75rem">
+            <button class="btn-pk btn-full" onclick="saveProd()" style="padding:.75rem"><span id="save-txt">💾 Save Product</span></button>
+            <button class="btn-ol" onclick="saveDraft()">Draft</button>
+          </div>
+          <button class="btn-ol btn-full" id="cancel-btn" style="display:none;margin-bottom:.75rem" onclick="cancelEdit()">✕ Cancel Edit</button>
+          <div id="save-msg" style="font-size:.8rem;font-weight:700;text-align:center;padding:.6rem;border-radius:10px;display:none"></div>
+        </div>
       </div>
-      <button class="btn-ol btn-full" id="cancel-btn" style="display:none;margin-bottom:1rem" onclick="cancelEdit()">✕ Cancel Edit</button>
-      <div id="save-msg" style="font-size:.78rem;font-weight:700;text-align:center;padding:.5rem;border-radius:8px;display:none;margin-bottom:1rem"></div>
     </div>
   </div>
 </div>
 
 <!-- CATEGORIES -->
 <div class="asec" id="as-categories">
-  <div class="adm-bc">WAA Kids Closet / <span>Categories</span></div>
+  <div class="sec-hd"><div class="sec-hd-t">Manage <span>Categories</span></div></div>
   <div class="dgrid">
-    <div class="acard"><div class="acard-hd"><span class="acard-t">Add Category</span></div><div class="acard-bd">
-      <label class="afl">Category Name *</label><input class="afin" type="text" id="c-name" placeholder="e.g. Girls Wear">
-      <label class="afl">Emoji Icon</label><input class="afin" type="text" id="c-emoji" placeholder="👗" maxlength="4">
-      <label class="afl">Description</label><textarea class="afin" style="min-height:60px" id="c-desc" placeholder="Category description…"></textarea>
-      <button class="btn-pk btn-full" onclick="saveCat()">Add Category</button>
-    </div></div>
-    <div class="acard" style="overflow-x:auto"><div class="acard-hd"><span class="acard-t">All Categories</span></div>
+    <div class="acard" style="border:1.5px solid var(--pp-l)">
+      <div class="acard-hd"><span class="acard-t">✦ Add New Category</span></div>
+      <div class="acard-bd">
+        <label class="afl">Category Name *</label><input class="afin" type="text" id="c-name" placeholder="e.g. Girls Wear">
+        <label class="afl">Emoji Icon</label><input class="afin" type="text" id="c-emoji" placeholder="👗" maxlength="4">
+        <label class="afl">Description</label><textarea class="afin" style="min-height:60px" id="c-desc" placeholder="Category description…"></textarea>
+        <button class="btn-pk btn-full" style="padding:.75rem" onclick="saveCat()">✦ Add Category</button>
+      </div>
+    </div>
+    <div class="acard" style="overflow-x:auto">
+      <div class="acard-hd"><span class="acard-t">🏷️ All Categories</span><span class="acard-sub" id="cat-count"></span></div>
       <table class="at"><thead><tr><th>Icon</th><th>Name</th><th>Products</th><th>Action</th></tr></thead><tbody id="cat-t"></tbody></table>
     </div>
   </div>
@@ -255,21 +362,22 @@ body{background:var(--bg);color:var(--tx);font-family:var(--fd);min-height:100vh
 
 <!-- ORDERS -->
 <div class="asec" id="as-orders">
-  <div class="adm-bc">WAA Kids Closet / <span>Orders</span></div>
+  <div class="sec-hd"><div class="sec-hd-t">Customer <span>Orders</span></div><button class="btn-ol" onclick="exportOrdersCSV()">📥 Export CSV</button></div>
   <div class="atbar">
-    <input class="as-inp" id="ord-search" placeholder="🔍 Search orders…" oninput="renderOrders()">
-    <select class="as-sel" id="ord-status-fil" onchange="renderOrders()"><option value="">All Status</option><option>Pending</option><option>Paid</option><option>Shipped</option><option>Delivered</option><option>Cancelled</option></select>
-    <button class="abt-o" style="margin-left:auto" onclick="exportOrdersCSV()">📥 Export CSV</button>
+    <input class="as-inp" id="ord-search" placeholder="🔍 Search by Order ID, name, phone…" oninput="renderOrders()" style="flex:1;min-width:250px">
+    <select class="as-sel" id="ord-status-fil" onchange="renderOrders()">
+      <option value="">All Status</option><option>Pending</option><option>Paid</option><option>Shipped</option><option>Delivered</option><option>Cancelled</option>
+    </select>
   </div>
   <div class="acard" style="overflow-x:auto">
-    <table class="at" style="min-width:1000px"><thead><tr><th>Order ID</th><th>Customer</th><th>Phone</th><th>Address</th><th>Items</th><th>Amount</th><th>Date</th><th>Status</th><th>Update</th><th>WhatsApp</th></tr></thead>
+    <table class="at" style="min-width:1050px"><thead><tr><th>Order ID</th><th>Customer</th><th>Phone</th><th>Address</th><th>Items</th><th>Amount</th><th>Date</th><th>Status</th><th>Update</th><th>WhatsApp</th></tr></thead>
     <tbody id="real-orders-t"></tbody></table>
   </div>
 </div>
 
 <!-- CUSTOMERS -->
 <div class="asec" id="as-customers">
-  <div class="adm-bc">WAA Kids Closet / <span>Customers</span></div>
+  <div class="sec-hd"><div class="sec-hd-t">Customer <span>Database</span></div></div>
   <div class="acard" style="overflow-x:auto">
     <table class="at"><thead><tr><th>Name</th><th>Phone</th><th>City</th><th>Orders</th><th>Total Spent</th><th>Last Order</th></tr></thead>
     <tbody id="cust-t"></tbody></table>
@@ -279,11 +387,9 @@ body{background:var(--bg);color:var(--tx);font-family:var(--fd);min-height:100vh
 </div><!-- /adm-body -->
 </div><!-- /adminPage -->
 
-
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
 <script>
 try {
   firebase.initializeApp({
