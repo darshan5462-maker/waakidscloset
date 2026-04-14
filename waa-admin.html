@@ -170,12 +170,6 @@ body{background:var(--bg);color:var(--tx);font-family:var(--fd);min-height:100vh
 .ch-lbl{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:.59rem;color:var(--mu);white-space:nowrap}
 .wa-btn{border:none;border-radius:6px;padding:.26rem .45rem;font-size:.67rem;font-weight:800;
   cursor:pointer;width:100%;margin-bottom:2px;font-family:var(--fd)}
-.sz-chk{display:flex;align-items:center;gap:.3rem;font-size:.76rem;font-weight:700;
-  color:var(--mu);cursor:pointer;padding:.28rem .4rem;border-radius:6px;transition:all .15s;
-  border:1.5px solid transparent}
-.sz-chk:hover{background:var(--pk-l);color:var(--pk)}
-.sz-chk input{accent-color:var(--pk);width:13px;height:13px;cursor:pointer}
-.sz-chk:has(input:checked){background:var(--pk-l);color:var(--pk);border-color:var(--pk)}
 .toast-el{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--cd);
   border:1.5px solid var(--br2);border-radius:13px;padding:.75rem 1.2rem;
   font-weight:700;font-size:.83rem;z-index:9999;color:var(--tx);
@@ -305,26 +299,7 @@ body{background:var(--bg);color:var(--tx);font-family:var(--fd);min-height:100vh
           <div><label class="fl">Age Group</label><select class="fi" id="p-age"><option value="">All Ages</option><option value="0-2">0–2 Years</option><option value="2-5">2–5 Years</option><option value="5-10">5–10 Years</option><option value="10-14">10–14 Years</option></select></div>
           <div><label class="fl">Badge</label><select class="fi" id="p-badge"><option value="">None</option><option value="new">🆕 New</option><option value="sale">🏷️ Sale</option><option value="hot">🔥 Hot</option><option value="bestseller">⭐ Bestseller</option></select></div>
         </div>
-        <label class="fl">Sizes (select all that apply)</label>
-        <div id="size-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:.35rem;background:var(--ab);border:1.5px solid var(--br);border-radius:9px;padding:.65rem;margin-bottom:.65rem">
-          <label class="sz-chk"><input type="checkbox" value="0-6M"> 0-6M</label>
-          <label class="sz-chk"><input type="checkbox" value="6-12M"> 6-12M</label>
-          <label class="sz-chk"><input type="checkbox" value="1-2Y"> 1-2Y</label>
-          <label class="sz-chk"><input type="checkbox" value="2-3Y"> 2-3Y</label>
-          <label class="sz-chk"><input type="checkbox" value="3-4Y"> 3-4Y</label>
-          <label class="sz-chk"><input type="checkbox" value="4-5Y"> 4-5Y</label>
-          <label class="sz-chk"><input type="checkbox" value="5-6Y"> 5-6Y</label>
-          <label class="sz-chk"><input type="checkbox" value="6-7Y"> 6-7Y</label>
-          <label class="sz-chk"><input type="checkbox" value="7-8Y"> 7-8Y</label>
-          <label class="sz-chk"><input type="checkbox" value="8-9Y"> 8-9Y</label>
-          <label class="sz-chk"><input type="checkbox" value="9-10Y"> 9-10Y</label>
-          <label class="sz-chk"><input type="checkbox" value="10-11Y"> 10-11Y</label>
-          <label class="sz-chk"><input type="checkbox" value="11-12Y"> 11-12Y</label>
-          <label class="sz-chk"><input type="checkbox" value="12-13Y"> 12-13Y</label>
-          <label class="sz-chk"><input type="checkbox" value="13-14Y"> 13-14Y</label>
-          <label class="sz-chk"><input type="checkbox" value="Free Size"> Free Size</label>
-        </div>
-        <input type="hidden" id="p-sizes">
+        <label class="fl">Sizes (comma separated)</label><input class="fi" type="text" id="p-sizes" placeholder="2Y, 3Y, 4Y, 5Y, 6Y">
         <div class="g22">
           <div><label class="fl">Emoji Icon</label><input class="fi" type="text" id="p-emoji" placeholder="👗" maxlength="4"></div>
           <div><label class="fl">Status</label><select class="fi" id="p-status"><option>Active</option><option>Draft</option><option>Out of Stock</option></select></div>
@@ -637,10 +612,6 @@ function editProd(id){
   if(e('p-badge'))e('p-badge').value=p.badge||'';
   if(e('p-cat'))e('p-cat').value=p.cat||'';
   editImgs=p.images||[];pendImgs=[];
-  // Restore size checkboxes
-  document.querySelectorAll('#size-grid input').forEach(function(cb){
-    cb.checked = (p.sizes||'').split(',').map(function(s){return s.trim()}).indexOf(cb.value) >= 0;
-  });
   var prev=e('img-prev');
   if(prev)prev.innerHTML=editImgs.map(function(src,i){
     return'<div style="position:relative"><img class="pvi" src="'+src+'"><button onclick="removeImg('+i+')" style="position:absolute;top:-4px;right:-4px;background:var(--rd);border:none;border-radius:50%;width:15px;height:15px;color:#fff;font-size:.58rem;cursor:pointer;line-height:1">✕</button></div>';
@@ -655,7 +626,6 @@ function removeImg(i){editImgs.splice(i,1);editProd(editingId)}
 function cancelEdit(){
   editingId=null;editImgs=[];pendImgs=[];
   ['p-name','p-brand','p-desc','p-price','p-orig','p-sizes','p-colors','p-emoji'].forEach(function(id){var e=document.getElementById(id);if(e)e.value=''});
-  document.querySelectorAll('#size-grid input').forEach(function(cb){cb.checked=false});
   var e=document.getElementById;
   if(document.getElementById('save-lbl'))document.getElementById('save-lbl').textContent='💾 Save to Firebase';
   if(document.getElementById('cancel-btn'))document.getElementById('cancel-btn').style.display='none';
@@ -673,7 +643,7 @@ function saveProd(){
     id:id, name:name,
     cat:g('p-cat'), brand:g('p-brand'), desc:g('p-desc'),
     price:price, origPrice:parseFloat(g('p-orig'))||0,
-    sizes:(function(){var checked=[];document.querySelectorAll('#size-grid input:checked').forEach(function(cb){checked.push(cb.value)});document.getElementById('p-sizes').value=checked.join(',');return checked.join(',')})(), colors:g('p-colors'),
+    sizes:g('p-sizes'), colors:g('p-colors'),
     age:g('p-age'), emoji:g('p-emoji')||'👗',
     badge:g('p-badge'), status:g('p-status')||'Active',
     featured:g('p-feat')||'no',
