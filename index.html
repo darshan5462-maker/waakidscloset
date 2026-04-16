@@ -3324,10 +3324,34 @@ function startAutoSync() {
 
   function fsVal(f) {
     if (!f) return null;
-    if (f.stringValue !== undefined) { try { return JSON.parse(f.stringValue); } catch(e) { return f.stringValue; } }
-    if (f.doubleValue !== undefined) return f.doubleValue;
+    // String
+    if (f.stringValue !== undefined) {
+      var s = f.stringValue;
+      // Only try JSON parse if it looks like array/object
+      if (s && (s[0] === '[' || s[0] === '{')) {
+        try { return JSON.parse(s); } catch(e) {}
+      }
+      return s;
+    }
+    // Number
+    if (f.doubleValue !== undefined) return Number(f.doubleValue);
     if (f.integerValue !== undefined) return parseInt(f.integerValue);
+    // Boolean
     if (f.booleanValue !== undefined) return f.booleanValue;
+    // NULL
+    if (f.nullValue !== undefined) return null;
+    // ARRAY — this is what was missing for images!
+    if (f.arrayValue !== undefined) {
+      var vals = (f.arrayValue.values || []);
+      return vals.map(function(v) { return fsVal(v); });
+    }
+    // MAP
+    if (f.mapValue !== undefined) {
+      var obj = {};
+      var fields = (f.mapValue.fields || {});
+      Object.keys(fields).forEach(function(k) { obj[k] = fsVal(fields[k]); });
+      return obj;
+    }
     return null;
   }
   function docToObj(doc) {
