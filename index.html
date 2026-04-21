@@ -102,8 +102,8 @@ window._fbAU    = null;
           if (ad2 && ad2.classList.contains('on')) renderDashStats();
         }, function(e) { console.warn('Orders listener:', e); });
 
-      // ── REAL-TIME CATEGORIES LISTENER ──
-      window._fbDB.collection('categories')
+      // ── REAL-TIME CATORIES LISTENER ──
+      window._fbDB.collection('catories')
         .onSnapshot(function(snap) {
           if (snap.empty) return;
           var cats = [];
@@ -858,8 +858,8 @@ footer{background:var(--tx);color:#fff;padding:4rem 2rem 2rem}
           <div class="ptag">🎊 Limited Time Sale</div>
           <h2 class="ptit">Grab Flat <span>20% OFF</span> on All Festive Wear!</h2>
           <div class="cpn-box">
-            <div><div class="cpn-lbl">Use Code</div><div class="cpn-code">WAA40</div></div>
-            <button class="cpn-copy" onclick="copyCpn('WAA40')">Copy</button>
+            <div><div class="cpn-lbl">Use Code</div><div class="cpn-code">WAA20</div></div>
+            <button class="cpn-copy" onclick="copyCpn('WAA20')">Copy</button>
           </div><br>
           <button class="btn btn-yl btn-lg" onclick="goPage('shop')">Shop the Sale →</button>
         </div>
@@ -1251,7 +1251,7 @@ footer{background:var(--tx);color:#fff;padding:4rem 2rem 2rem}
         <div style="background:var(--pk-l);border-radius:12px;padding:.85rem;border:1.5px dashed var(--pk);margin-bottom:1rem">
           <div style="font-size:.72rem;font-weight:800;color:var(--pk);margin-bottom:.45rem;text-transform:uppercase;letter-spacing:.06em">🏷️ Promo Code</div>
           <div style="display:flex;gap:.45rem">
-            <input id="cpn-inp" type="text" placeholder="e.g. WAA40" style="flex:1;padding:.48rem .75rem;font-size:.85rem;border-radius:8px;border:1.5px solid var(--pk);font-weight:700;text-transform:uppercase;outline:none;background:#fff">
+            <input id="cpn-inp" type="text" placeholder="e.g. WAA20" style="flex:1;padding:.48rem .75rem;font-size:.85rem;border-radius:8px;border:1.5px solid var(--pk);font-weight:700;text-transform:uppercase;outline:none;background:#fff">
             <button onclick="applyCheckoutCpn()" class="btn btn-pk btn-sm" style="border-radius:8px;font-size:.8rem;white-space:nowrap;padding:.45rem .85rem">Apply</button>
           </div>
           <div id="cpn-msg" style="font-size:.73rem;margin-top:.35rem;font-weight:700;min-height:1rem"></div>
@@ -2273,7 +2273,7 @@ function applyCheckoutCpn() {
     inp.style.borderColor = 'var(--gn)';
   } else {
     appliedDiscount = 0; appliedPct = 0;
-    if (msg)  { msg.textContent = '❌ Invalid code. Try WAA40 for 40% off!'; msg.style.color = 'var(--rd)'; }
+    if (msg)  { msg.textContent = '❌ Invalid code. Try WAA20 for 40% off!'; msg.style.color = 'var(--rd)'; }
     if (row)  row.style.display = 'none';
     inp.style.borderColor = 'var(--rd)';
     toast('Invalid coupon code ❌', '❌');
