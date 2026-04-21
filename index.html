@@ -747,7 +747,7 @@ footer{background:var(--tx);color:#fff;padding:4rem 2rem 2rem}
   <!-- OFFER BANNER -->
   <div style="background:linear-gradient(135deg,#ff4fa0,#a855f7);padding:.75rem 1.5rem;text-align:center;cursor:pointer" onclick="goPage('shop')">
     <div style="color:#fff;font-weight:800;font-size:.92rem;letter-spacing:.01em">
-      🎉 <span style="text-decoration:underline;text-underline-offset:3px">GRAND SALE ON NOW</span> — Up to 40% OFF on All Kids Wear! Use code <span style="background:rgba(255,255,255,.25);padding:.1rem .5rem;border-radius:20px;letter-spacing:.05em">WAA40</span> at checkout 🛍️
+      🎉 <span style="text-decoration:underline;text-underline-offset:3px">GRAND SALE ON NOW</span> — flat 20% OFF on All Kids Wear! Use code <span style="background:rgba(255,255,255,.25);padding:.1rem .5rem;border-radius:20px;letter-spacing:.05em">WAA20</span> at checkout 🛍️
     </div>
   </div>
 
@@ -856,7 +856,7 @@ footer{background:var(--tx);color:#fff;padding:4rem 2rem 2rem}
       <div class="promo-box" style="overflow:hidden;position:relative">
         <div style="position:relative;z-index:2">
           <div class="ptag">🎊 Limited Time Sale</div>
-          <h2 class="ptit">Grab Flat <span>40% OFF</span> on All Festive Wear!</h2>
+          <h2 class="ptit">Grab Flat <span>20% OFF</span> on All Festive Wear!</h2>
           <div class="cpn-box">
             <div><div class="cpn-lbl">Use Code</div><div class="cpn-code">WAA40</div></div>
             <button class="cpn-copy" onclick="copyCpn('WAA40')">Copy</button>
@@ -2243,7 +2243,7 @@ function applyCpn(code) {
 }
 
 // Valid discount codes
-var VALID_CODES = { 'WAA40': 40, 'WAA20': 20, 'WAA10': 10, 'WELCOME10': 10 };
+var VALID_CODES = { 'WAA20': 20, 'WAA10': 10, 'WELCOME10': 10 };
 var appliedDiscount = 0;
 var appliedPct = 0;
 
@@ -2371,7 +2371,7 @@ function launchRazorpay(tot, cart, sub, gst) {
   var fn = (inputs[0] && inputs[0].value) || 'Customer';
   var ph = (document.querySelectorAll('#page-checkout input[type=tel]')[0] && document.querySelectorAll('#page-checkout input[type=tel]')[0].value) || '9380013093';
   var opts = {
-    key: 'rzp_test_WAA000000000',
+    key: 'rzp_live_Sg7SqQ8LhqPSql',
     amount: tot * 100,
     currency: 'INR',
     name: 'WAA Kids Closet',
