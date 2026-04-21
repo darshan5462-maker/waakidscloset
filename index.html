@@ -2,6 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+  (function(){
+    emailjs.init({publicKey: "kL5gvwqlNwUcAkgti"});
+  })();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>WAA Kids Closet — We-Are-Affordable | Harihar, Karnataka</title>
 <meta name="description" content="WAA Kids Closet – Premium branded kidswear at affordable prices. Babyhug, Zara & more. Serving Harihar, Davangere & PAN India. COD available.">
@@ -747,7 +753,7 @@ footer{background:var(--tx);color:#fff;padding:4rem 2rem 2rem}
   <!-- OFFER BANNER -->
   <div style="background:linear-gradient(135deg,#ff4fa0,#a855f7);padding:.75rem 1.5rem;text-align:center;cursor:pointer" onclick="goPage('shop')">
     <div style="color:#fff;font-weight:800;font-size:.92rem;letter-spacing:.01em">
-      🎉 <span style="text-decoration:underline;text-underline-offset:3px">GRAND SALE ON NOW</span> — flat 20% OFF on All Kids Wear! Use code <span style="background:rgba(255,255,255,.25);padding:.1rem .5rem;border-radius:20px;letter-spacing:.05em">WAA20</span> at checkout 🛍️
+      🎉 <span style="text-decoration:underline;text-underline-offset:3px">GRAND SALE ON NOW</span> — Flat 20% OFF on All Kids Wear! Use code <span style="background:rgba(255,255,255,.25);padding:.1rem .5rem;border-radius:20px;letter-spacing:.05em">WAA20</span> at checkout 🛍️
     </div>
   </div>
 
@@ -984,9 +990,7 @@ footer{background:var(--tx);color:#fff;padding:4rem 2rem 2rem}
           <input class="nl-i" type="email" placeholder="your@email.com" required>
           <button class="nl-b" type="submit">Subscribe →</button>
         </form>
-        <p style="font-size:.7rem;color:var(--mu);margin-top:.7rem;text-align:center;font-weight:600">
-          📧 To collect subscriber emails, connect WhatsApp Business or Google Sheets — talk to your developer.
-        </p>
+        <p style="font-size:.7rem;color:var(--mu);margin-top:.7rem;text-align:center;font-weight:600">📧 Subscribers get notified about exclusive deals and new arrivals!</p>
       </div>
     </div>
   </section>
@@ -2273,7 +2277,7 @@ function applyCheckoutCpn() {
     inp.style.borderColor = 'var(--gn)';
   } else {
     appliedDiscount = 0; appliedPct = 0;
-    if (msg)  { msg.textContent = '❌ Invalid code. Try WAA20 for 40% off!'; msg.style.color = 'var(--rd)'; }
+    if (msg)  { msg.textContent = '❌ Invalid code. Try WAA20 for 20% off!'; msg.style.color = 'var(--rd)'; }
     if (row)  row.style.display = 'none';
     inp.style.borderColor = 'var(--rd)';
     toast('Invalid coupon code ❌', '❌');
@@ -3230,7 +3234,39 @@ function copyCpn(code) {
     .then(function(){toast('Code '+code+' copied!','📋');})
     .catch(function(){toast('Use code: '+code,'📋');});
 }
-function doNL(e) { e.preventDefault(); toast('Subscribed! Welcome to WAA Kids Closet 💕','💕'); e.target.reset(); }
+function doNL(e) {
+  e.preventDefault();
+  var input = e.target.querySelector('input[type=email]');
+  var btn   = e.target.querySelector('button');
+  var email = input.value.trim();
+  if (!email) return;
+
+  btn.textContent = 'Sending…';
+  btn.disabled = true;
+
+  emailjs.send('service_9xcqai9', 'template_jqgepr6', {
+    subscriber_email: email,
+    date: new Date().toLocaleString('en-IN', {
+      day:'2-digit', month:'long', year:'numeric',
+      hour:'2-digit', minute:'2-digit'
+    })
+  }).then(function() {
+    btn.textContent = '✅ Subscribed!';
+    btn.style.background = 'var(--gn)';
+    input.value = '';
+    toast('🎉 Subscribed! You will get exclusive deals first!', '🎉');
+    setTimeout(function() {
+      btn.textContent = 'Subscribe →';
+      btn.style.background = '';
+      btn.disabled = false;
+    }, 4000);
+  }).catch(function(err) {
+    btn.textContent = 'Subscribe →';
+    btn.disabled = false;
+    toast('Something went wrong. Please try again.', '❌');
+    console.error('EmailJS error:', err);
+  });
+}
 function doContactMsg() { toast('Message sent! We\'ll reply within 1 hour 💕','💕'); }
 function doEditCatMsg() { toast('To edit: delete and re-add with new name'); }
 
