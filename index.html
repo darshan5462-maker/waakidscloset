@@ -3245,28 +3245,27 @@ function doNL(e) {
   btn.textContent = 'Sending…';
   btn.disabled = true;
 
-  emailjs.send('service_9xcqai9', 'template_jqgepr6', {
-    subscriber_email: email,
-    name: 'WAA Kids Website',
-    email: email,
-    message: '📧 New subscriber: ' + email + '\n📅 Date: ' + new Date().toLocaleString('en-IN', {day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}),
-    date: new Date().toLocaleString('en-IN', {day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}),
-    to_email: 'waakidscloset@gmail.com'
+  var SHEET_URL = 'https://script.google.com/macros/s/AKfycbxKvgzxRxeY7KT0HJ_7TAR5oiRXRO_Eehel4ANnwJeu6mLWNpAl7vXO5M0nLV_-7saV/exec';
+
+  fetch(SHEET_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email })
   }).then(function() {
     btn.textContent = '✅ Subscribed!';
     btn.style.background = 'var(--gn)';
     input.value = '';
-    toast('🎉 Subscribed! You will get exclusive deals first!', '🎉');
+    toast('🎉 Thank you for subscribing! Exclusive deals coming your way!', '🎉');
     setTimeout(function() {
       btn.textContent = 'Subscribe →';
       btn.style.background = '';
       btn.disabled = false;
     }, 4000);
-  }).catch(function(err) {
+  }).catch(function() {
     btn.textContent = 'Subscribe →';
     btn.disabled = false;
     toast('Something went wrong. Please try again.', '❌');
-    console.error('EmailJS error:', err);
   });
 }
 function doContactMsg() { toast('Message sent! We\'ll reply within 1 hour 💕','💕'); }
